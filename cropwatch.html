@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-/* ─────────────────────────── VARIABLES ─────────────────────────── */
+
 :root{
 --bg:#0d0a00; --bg2:#141000; --surface:#1c1600; --surface2:#231c00;
 --border:#2e2500; --border2:#3a2f00;
@@ -24,7 +24,6 @@
 --font-mono:'Space Mono',monospace;
 }
 
-/* ─────────────────────────── RESET ─────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;min-height:100vh;font-size:14px;}
@@ -32,7 +31,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
-/* ─────────────────────────── LOGIN ─────────────────────────── */
 #loginPage{
 display:flex;align-items:center;justify-content:center;
 min-height:100vh;
@@ -86,10 +84,7 @@ letter-spacing:.04em;transition:all .2s;margin-top:6px;
 .login-hint{text-align:center;font-size:11px;color:var(--muted);margin-top:20px;font-family:var(--font-mono);}
 .login-hint span{color:var(--gold3);}
 
-/* ─────────────────────────── APP SHELL ─────────────────────────── */
 #app{display:none;}
-
-/* ─────────────────────────── SIDEBAR ─────────────────────────── */
 .sidebar{
 position:fixed;top:0;left:0;bottom:0;width:var(--sidebar);
 background:var(--surface);border-right:1px solid var(--border);
@@ -146,7 +141,6 @@ transition:all .2s;
 }
 .logout-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.05);}
 
-/* ─────────────────────────── MAIN ─────────────────────────── */
 .main{margin-left:var(--sidebar);min-height:100vh;}
 .topbar{
 height:62px;padding:0 32px;
@@ -180,12 +174,10 @@ font-size:9px;font-weight:700;font-family:var(--font-display);
 display:flex;align-items:center;justify-content:center;
 }
 
-/* ─────────────────────────── PANELS ─────────────────────────── */
 .panel{display:none;padding:32px;animation:riseUp .35s ease both;}
 .panel.active{display:block;}
 .panel-map-special.active{display:flex!important;flex-direction:column;height:calc(100vh - 62px);padding:0;}
 
-/* ─────────────────────────── KPI CARDS ─────────────────────────── */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
 .kpi{
 background:var(--surface);border:1px solid var(--border);
@@ -210,14 +202,12 @@ border-radius:var(--radius) var(--radius) 0 0;
 .kpi.red .kpi-val{color:var(--danger);}
 .kpi-sub{font-size:11px;color:var(--muted);font-weight:400;}
 
-/* ─────────────────────────── CARDS ─────────────────────────── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
 .card-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
 .card-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:20px;letter-spacing:.03em;}
 .chart-row{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:20px;}
 .svg-wrap{width:100%;overflow:visible;}
 
-/* ─────────────────────────── ALERTS ─────────────────────────── */
 .alert-list{display:flex;flex-direction:column;gap:10px;}
 .alert-item{
 display:flex;align-items:flex-start;gap:14px;
@@ -240,7 +230,6 @@ padding:4px 10px;border-radius:100px;letter-spacing:.08em;
 .sev-warn{background:rgba(251,146,60,.12);color:var(--warn);}
 .sev-info{background:rgba(56,189,248,.12);color:var(--info);}
 
-/* ─────────────────────────── DRONE CARDS ─────────────────────────── */
 .drone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
 .drone-card{
 background:var(--surface);border:1px solid var(--border);
@@ -277,7 +266,6 @@ transition:transform .25s,border-color .25s;
 .forest-tag{color:var(--gold2);font-weight:600;font-family:var(--font-body);}
 .forest-state{color:var(--muted);font-family:var(--font-mono);font-size:9px;}
 
-/* ─────────────────────────── MAP ─────────────────────────── */
 .leaflet-container{background:#0d0a00!important;}
 .leaflet-tile{filter:brightness(.5) saturate(1.3) hue-rotate(25deg);}
 .leaflet-control-zoom a{background:var(--surface)!important;color:var(--gold)!important;border-color:var(--border2)!important;}
@@ -307,7 +295,6 @@ margin-bottom:6px;
 .f-ndvi.mid{color:var(--gold);}
 .f-ndvi.lo{color:var(--danger);}
 
-/* ─────────────────────────── FLIGHT LOGS TABLE ─────────────────────────── */
 .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .tbl-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .tbl-title{font-family:var(--font-display);font-size:15px;font-weight:700;}
@@ -335,7 +322,6 @@ tr:hover td{background:var(--surface2);}
 .st-fly{background:rgba(56,189,248,.1);color:var(--info);}
 .st-abort{background:rgba(239,68,68,.1);color:var(--danger);}
 
-/* ─────────────────────────── CHARTS ─────────────────────────── */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .chart-full{grid-column:span 2;}
 .bar-chart{display:flex;align-items:flex-end;gap:10px;height:200px;padding-top:24px;position:relative;}
@@ -358,8 +344,7 @@ tr:hover td{background:var(--surface2);}
 .dl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
 .dl-name{flex:1;color:var(--text2);}
 .dl-pct{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--text);}
-
-/* ─────────────────────────── UPLOAD ─────────────────────────── */
+  
 .upload-drop{background:var(--surface);border:2px dashed var(--border2);border-radius:20px;padding:56px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:22px;}
 .upload-drop:hover{border-color:var(--gold);background:rgba(245,166,35,.03);}
 .upload-drop.drag-over{border-color:var(--gold)!important;background:rgba(245,166,35,.06)!important;transform:scale(1.01);}
@@ -384,7 +369,6 @@ tr:hover td{background:var(--surface2);}
 .q-remove{background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:all .15s;flex-shrink:0;}
 .q-remove:hover{color:var(--danger);background:rgba(239,68,68,.1);}
 
-/* pipeline */
 .pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:22px;}
 .pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 14px;text-align:center;}
 .pipe-ico{font-size:26px;margin-bottom:10px;}
@@ -392,7 +376,6 @@ tr:hover td{background:var(--surface2);}
 .pipe-name{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--gold2);margin-bottom:6px;}
 .pipe-desc{font-size:10px;color:var(--muted);line-height:1.5;font-family:var(--font-body);}
 
-/* ─────────────────────────── BACKEND ─────────────────────────── */
 .be-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .be-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
 .be-title{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--gold2);margin-bottom:4px;}
@@ -417,7 +400,6 @@ tr:hover td{background:var(--surface2);}
 .sec-hdr h2{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;}
 .sec-hdr p{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.03em;}
 
-/* ─────────────────────────── CROP IMAGERY PANEL ─────────────────────────── */
 .fp-overlay{position:fixed;inset:0;z-index:9000;background:rgba(5,4,0,.9);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fpFadeIn .22s ease;}
 .fp-overlay.fp-hidden{display:none;}
 @keyframes fpFadeIn{from{opacity:0}to{opacity:1}}
@@ -473,7 +455,6 @@ tr:hover td{background:var(--surface2);}
 .fp-mrow-lbl{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
 .fp-mrow-val{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text);}
 
-/* ─────────────────────────── ANALYSIS MODAL ─────────────────────────── */
 .analysis-overlay{position:fixed;inset:0;z-index:9500;background:rgba(5,4,0,.92);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fpFadeIn .22s ease;}
 .analysis-overlay.an-hidden{display:none;}
 .analysis-modal{background:var(--surface);border:1px solid var(--border2);border-radius:22px;width:min(740px,96vw);box-shadow:0 40px 100px rgba(0,0,0,.7);animation:riseUp .32s cubic-bezier(.16,1,.3,1) both;overflow:hidden;}
@@ -533,11 +514,9 @@ tr:hover td{background:var(--surface2);}
 .map-view-full-btn:hover{background:var(--gold2);transform:translateY(-1px);}
 .map-upload-thumb{width:100%;border-radius:7px;object-fit:cover;max-height:110px;display:block;border:1px solid var(--border2);margin-bottom:7px;cursor:pointer;}
 
-/* ─────────────────────────── ANIMATIONS ─────────────────────────── */
 @keyframes riseUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
 
-/* ─────────────────────────── RESPONSIVE ─────────────────────────── */
 @media(max-width:1100px){
 .kpi-row{grid-template-columns:1fr 1fr;}
 .chart-row{grid-template-columns:1fr;}
@@ -556,7 +535,6 @@ tr:hover td{background:var(--surface2);}
 </head>
 <body>
 
-<!-- ═══════════════════ LOGIN ═══════════════════ -->
 <div id="loginPage">
 <div class="login-card">
 <div class="login-brand">
@@ -625,7 +603,6 @@ CropWatch
 </div>
 </header>
 
-<!-- ══════════ DASHBOARD ══════════ -->
 <div class="panel active" id="panel-dashboard">
 <div class="kpi-row">
 <div class="kpi gold">
@@ -742,7 +719,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══════════ DRONE FLEET ══════════ -->
 <div class="panel" id="panel-drones">
 <div class="sec-hdr"><h2>Drone Fleet</h2><p>Real-time status of all deployed crop monitoring drones across India</p></div>
 <div class="drone-grid">
@@ -826,8 +802,7 @@ CropWatch
 </div>
 </div>
 </div>
-
-<!-- ══════════ CROP MAP ══════════ -->
+  
 <div class="panel panel-map-special" id="panel-map" style="padding:0;">
 <div style="padding:16px 24px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);flex-shrink:0;">
 <div>
@@ -866,7 +841,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══════════ UPLOAD ══════════ -->
 <div class="panel" id="panel-upload">
 <div class="sec-hdr"><h2>Upload Drone Scan</h2><p>Upload GeoTIFF, multispectral, or CSV telemetry files from crop monitoring missions</p></div>
 <input type="file" id="realFileInput" multiple accept="image/*,.tif,.tiff,.las,.csv,.jpeg,.jpg,.png,.jp2" style="display:none" onchange="handleFileSelect(this.files)">
@@ -929,7 +903,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══════════ SCAN LOGS ══════════ -->
 <div class="panel" id="panel-logs">
 <div class="sec-hdr"><h2>Scan Logs</h2><p>Complete mission history across all Indian crop zones</p></div>
 <div class="tbl-wrap">
@@ -963,7 +936,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══════════ ANALYTICS ══════════ -->
 <div class="panel" id="panel-charts">
 <div class="sec-hdr"><h2>Analytics</h2><p>Deep-dive crop health trends across monitored Indian agricultural zones</p></div>
 <div class="charts-grid">
@@ -1016,7 +988,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══════════ BACKEND ══════════ -->
 <div class="panel" id="panel-backend">
 <div class="sec-hdr"><h2>🧠 Backend Logic</h2><p>The invisible engine that powers CropWatch — explained visually</p></div>
 <div class="be-grid">
@@ -1075,7 +1046,7 @@ CropWatch
 </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- ══ CROP IMAGERY PANEL ══ -->
+
 <div class="fp-overlay fp-hidden" id="fpOverlay">
 <div class="fp-card" id="fpCard">
 <div class="fp-hero">
@@ -1137,7 +1108,6 @@ CropWatch
 </div>
 </div>
 
-<!-- ══ ANALYSIS MODAL ══ -->
 <div class="analysis-overlay an-hidden" id="analysisOverlay">
 <div class="analysis-modal">
 <div class="an-header">
@@ -1228,7 +1198,7 @@ CropWatch
 </div>
 
 <script>
-// ─────────────────────────── LOGIN ───────────────────────────
+
 function doLogin(){
 document.getElementById('loginPage').style.display='none';
 document.getElementById('app').style.display='block';
@@ -1242,7 +1212,6 @@ document.addEventListener('keydown',e=>{
 if(e.key==='Enter' && document.getElementById('loginPage').style.display!=='none') doLogin();
 });
 
-// ─────────────────────────── NAVIGATION ───────────────────────────
 const titles={
 dashboard:'Dashboard',drones:'Drone Fleet',map:'Crop Map · India',
 upload:'Upload Scan',logs:'Scan Logs',charts:'Analytics',backend:'Backend Logic'
@@ -1257,7 +1226,6 @@ if(name==='map') setTimeout(()=>{ if(window._map) window._map.invalidateSize(); 
 window.scrollTo(0,0);
 }
 
-// ─────────────────────────── CLOCK ───────────────────────────
 function startClock(){
 const el=document.getElementById('clock');
 setInterval(()=>{
@@ -1267,7 +1235,6 @@ el.textContent=`${pad(ist.getUTCHours())}:${pad(ist.getUTCMinutes())}:${pad(ist.
 },1000);
 }
 
-// ─────────────────────────── CROP ZONES DATA ───────────────────────────
 window.cropZones = [
 { name:"Punjab Wheat Belt", key:"punjab_wheat", state:"Punjab", lat:30.90, lon:75.85, ndvi:0.28, risk:"CRITICAL", color:"#ef4444", drone:"CW-01", area:"12,000 km²", crop:"Wheat" },
 { name:"Haryana Paddy Fields", key:"haryana_paddy", state:"Haryana", lat:29.05, lon:76.08, ndvi:0.72, risk:"Healthy", color:"#22c55e", drone:"CW-01", area:"8,500 km²", crop:"Paddy" },
@@ -1394,7 +1361,6 @@ L.circle([f.lat,f.lon],{radius:55000,color:f.color,fillColor:f.color,fillOpacity
 map.on('click',()=>{ if(_mapPanelOpen) closeInlinePanel(); });
 }
 
-// ─────────────────────────── TABLE FILTER ───────────────────────────
 function filterTable(input){
 const q=input.value.toLowerCase();
 document.querySelectorAll('#logBody tr').forEach(row=>{
@@ -1402,7 +1368,6 @@ row.style.display = row.textContent.toLowerCase().includes(q)?'':'none';
 });
 }
 
-// ─────────────────────────── PROGRESS BARS ───────────────────────────
 function animProgress(){
 let p2=62,p3=18;
 setInterval(()=>{
@@ -1411,7 +1376,6 @@ if(p2>70&&p3<100){p3=Math.min(100,p3+0.16);const b=document.getElementById('qp3'
 },250);
 }
 
-// ─────────────────────────── UPLOAD SYSTEM ───────────────────────────
 let userUploads=[];
 function formatBytes(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(1)+' MB';}
 function fileIcon(n){const e=n.split('.').pop().toLowerCase();return{png:'🖼️',jpg:'🖼️',jpeg:'🖼️',tif:'🛰️',tiff:'🛰️',las:'📡',csv:'📊',jp2:'🛰️'}[e]||'📄';}
@@ -1517,7 +1481,7 @@ if(fpOverlay)fpOverlay.addEventListener('click',e=>{if(e.target===fpOverlay)clos
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAnalysis();closeForestPanel();closeInlinePanel();}});
 
-// ─────────────────────────── ANALYSIS ENGINE ───────────────────────────
+
 const forestScansDB={};
 let _currentAnalysis=null;
 const CROP_NAMES={
@@ -1651,7 +1615,6 @@ document.body.appendChild(t);
 setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},4000);
 }
 
-// ─────────────────────────── INLINE MAP PANEL ───────────────────────────
 let _mapPanelOpen=false;
 function openMapInfoPanel(key){
 const d=CROP_PANEL[key];
@@ -1719,7 +1682,6 @@ document.querySelectorAll('#forestList .f-item').forEach(el=>{el.style.backgroun
 setTimeout(()=>{if(window._map)window._map.invalidateSize();},380);
 }
 
-// ─────────────────────────── FOREST PANEL ───────────────────────────
 function openForestPanel(key){
 const d=CROP_PANEL[key];
 if(!d)return;
