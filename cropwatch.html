@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CropWatch — India Drone Crop Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ─────────────────────────── VARIABLES ─────────────────────────── */
+:root{
+--bg:#0d0a00; --bg2:#141000; --surface:#1c1600; --surface2:#231c00;
+--border:#2e2500; --border2:#3a2f00;
+--gold:#f5a623; --gold2:#fbbf24; --gold3:#fde68a; --gold4:#fef9e7;
+--green:#4ade80; --green2:#22c55e;
+--warn:#fb923c; --danger:#ef4444; --info:#38bdf8; --purple:#c084fc;
+--text:#fef9e7; --text2:#d4b896; --muted:#7a5c2a; --muted2:#5a4020;
+--sidebar:260px;
+--radius:12px;
+--font-display:'Fraunces',serif;
+--font-body:'Familjen Grotesk',sans-serif;
+--font-mono:'Space Mono',monospace;
+}
+
+/* ─────────────────────────── RESET ─────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;min-height:100vh;font-size:14px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ─────────────────────────── LOGIN ─────────────────────────── */
+#loginPage{
+display:flex;align-items:center;justify-content:center;
+min-height:100vh;
+background:
+radial-gradient(ellipse at 20% 50%,rgba(245,166,35,.09) 0%,transparent 55%),
+radial-gradient(ellipse at 80% 20%,rgba(74,222,128,.05) 0%,transparent 50%),
+var(--bg);
+}
+#loginPage::before{
+content:'';position:fixed;inset:0;pointer-events:none;
+background-image:
+linear-gradient(rgba(245,166,35,.03) 1px,transparent 1px),
+linear-gradient(90deg,rgba(245,166,35,.03) 1px,transparent 1px);
+background-size:52px 52px;
+}
+.login-card{
+width:440px;position:relative;z-index:1;
+background:var(--surface);
+border:1px solid var(--border2);
+border-radius:24px;padding:52px 44px;
+animation:riseUp .7s cubic-bezier(.16,1,.3,1) both;
+box-shadow:0 32px 80px rgba(0,0,0,.6);
+}
+.login-card::before{
+content:'';position:absolute;inset:0;border-radius:24px;
+background:linear-gradient(135deg,rgba(245,166,35,.07),transparent 60%);
+pointer-events:none;
+}
+.login-brand{
+display:flex;align-items:center;gap:12px;
+font-family:var(--font-display);font-size:28px;font-weight:800;
+color:var(--gold2);margin-bottom:8px;
+}
+.login-brand svg{width:36px;height:36px;flex-shrink:0;}
+.login-tagline{font-size:12px;color:var(--muted);margin-bottom:40px;font-family:var(--font-mono);letter-spacing:.04em;}
+.lbl{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:block;font-family:var(--font-mono);}
+.inp{
+width:100%;background:var(--bg2);border:1.5px solid var(--border2);
+border-radius:10px;padding:13px 16px;color:var(--text);
+font-family:var(--font-mono);font-size:13px;outline:none;
+transition:border-color .2s,box-shadow .2s;margin-bottom:18px;
+}
+.inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,166,35,.12);}
+.login-btn{
+width:100%;background:var(--gold);color:#0d0a00;
+border:none;border-radius:10px;padding:14px;cursor:pointer;
+font-family:var(--font-display);font-size:15px;font-weight:800;
+letter-spacing:.04em;transition:all .2s;margin-top:6px;
+}
+.login-btn:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(245,166,35,.35);}
+.login-hint{text-align:center;font-size:11px;color:var(--muted);margin-top:20px;font-family:var(--font-mono);}
+.login-hint span{color:var(--gold3);}
+
+/* ─────────────────────────── APP SHELL ─────────────────────────── */
+#app{display:none;}
+
+/* ─────────────────────────── SIDEBAR ─────────────────────────── */
+.sidebar{
+position:fixed;top:0;left:0;bottom:0;width:var(--sidebar);
+background:var(--surface);border-right:1px solid var(--border);
+display:flex;flex-direction:column;z-index:60;
+}
+.sb-logo{
+padding:26px 22px 22px;
+border-bottom:1px solid var(--border);
+display:flex;align-items:center;gap:12px;
+}
+.sb-logo-text{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--gold2);}
+.sb-logo-badge{
+margin-left:auto;font-family:var(--font-mono);font-size:9px;
+background:rgba(245,166,35,.12);color:var(--gold);
+border:1px solid rgba(245,166,35,.2);border-radius:6px;padding:2px 7px;
+}
+.sb-section{padding:20px 16px 6px;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;}
+.nav-item{
+display:flex;align-items:center;gap:12px;
+margin:2px 10px;padding:10px 14px;
+border-radius:10px;cursor:pointer;
+font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--text2);
+transition:all .18s;border:1px solid transparent;
+user-select:none;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{
+background:rgba(245,166,35,.1);color:var(--gold);
+border-color:rgba(245,166,35,.18);
+}
+.nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0;}
+.nav-badge{
+margin-left:auto;font-size:9px;font-family:var(--font-mono);
+background:rgba(239,68,68,.15);color:var(--danger);
+border-radius:100px;padding:2px 7px;
+}
+.sb-bottom{margin-top:auto;padding:16px;border-top:1px solid var(--border);}
+.user-card{
+background:var(--surface2);border-radius:12px;padding:12px 14px;
+display:flex;align-items:center;gap:10px;margin-bottom:10px;
+}
+.user-av{
+width:34px;height:34px;border-radius:9px;
+background:linear-gradient(135deg,rgba(245,166,35,.2),rgba(251,191,36,.1));
+display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.user-name{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text);}
+.user-role{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;}
+.logout-btn{
+width:100%;background:transparent;border:1px solid var(--border2);
+border-radius:8px;padding:9px;color:var(--muted);
+font-family:var(--font-body);font-size:12px;font-weight:500;cursor:pointer;
+transition:all .2s;
+}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.05);}
+
+/* ─────────────────────────── MAIN ─────────────────────────── */
+.main{margin-left:var(--sidebar);min-height:100vh;}
+.topbar{
+height:62px;padding:0 32px;
+background:rgba(13,10,0,.92);backdrop-filter:blur(20px);
+border-bottom:1px solid var(--border);
+display:flex;align-items:center;justify-content:space-between;
+position:sticky;top:0;z-index:50;
+}
+.topbar-title{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.live-pill{
+display:flex;align-items:center;gap:7px;
+background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);
+border-radius:100px;padding:6px 14px;
+font-family:var(--font-mono);font-size:10px;color:var(--gold);letter-spacing:.1em;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 1.2s ease infinite;}
+.topbar-clock{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+.topbar-clock span{color:var(--gold2);}
+.notif-btn{
+position:relative;background:var(--surface);border:1px solid var(--border2);
+border-radius:9px;padding:8px 12px;cursor:pointer;font-size:15px;
+transition:border-color .2s;
+}
+.notif-btn:hover{border-color:var(--warn);}
+.notif-count{
+position:absolute;top:-5px;right:-5px;
+width:17px;height:17px;border-radius:50%;
+background:var(--danger);color:#fff;
+font-size:9px;font-weight:700;font-family:var(--font-display);
+display:flex;align-items:center;justify-content:center;
+}
+
+/* ─────────────────────────── PANELS ─────────────────────────── */
+.panel{display:none;padding:32px;animation:riseUp .35s ease both;}
+.panel.active{display:block;}
+.panel-map-special.active{display:flex!important;flex-direction:column;height:calc(100vh - 62px);padding:0;}
+
+/* ─────────────────────────── KPI CARDS ─────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.kpi{
+background:var(--surface);border:1px solid var(--border);
+border-radius:var(--radius);padding:22px 20px;
+position:relative;overflow:hidden;transition:transform .2s,border-color .2s;
+}
+.kpi:hover{transform:translateY(-2px);border-color:var(--border2);}
+.kpi::after{
+content:'';position:absolute;top:0;left:0;right:0;height:2px;
+border-radius:var(--radius) var(--radius) 0 0;
+}
+.kpi.gold::after{background:var(--gold);}
+.kpi.green::after{background:var(--green2);}
+.kpi.warn::after{background:var(--warn);}
+.kpi.red::after{background:var(--danger);}
+.kpi-icon{font-size:22px;margin-bottom:14px;opacity:.7;}
+.kpi-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.18em;margin-bottom:8px;}
+.kpi-val{font-family:var(--font-display);font-size:32px;font-weight:800;line-height:1;margin-bottom:6px;}
+.kpi.gold .kpi-val{color:var(--gold);}
+.kpi.green .kpi-val{color:var(--green);}
+.kpi.warn .kpi-val{color:var(--warn);}
+.kpi.red .kpi-val{color:var(--danger);}
+.kpi-sub{font-size:11px;color:var(--muted);font-weight:400;}
+
+/* ─────────────────────────── CARDS ─────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.card-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.card-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:20px;letter-spacing:.03em;}
+.chart-row{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:20px;}
+.svg-wrap{width:100%;overflow:visible;}
+
+/* ─────────────────────────── ALERTS ─────────────────────────── */
+.alert-list{display:flex;flex-direction:column;gap:10px;}
+.alert-item{
+display:flex;align-items:flex-start;gap:14px;
+background:var(--surface);border:1px solid var(--border);
+border-radius:var(--radius);padding:16px;transition:border-color .2s;
+}
+.alert-item:hover{border-color:var(--border2);}
+.alert-item.crit{border-left:3px solid var(--danger);}
+.alert-item.warn{border-left:3px solid var(--warn);}
+.alert-item.info{border-left:3px solid var(--info);}
+.alert-ico{font-size:18px;flex-shrink:0;margin-top:1px;}
+.alert-title{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.alert-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.sev-pill{
+margin-left:auto;flex-shrink:0;align-self:flex-start;
+font-family:var(--font-display);font-size:9px;font-weight:700;
+padding:4px 10px;border-radius:100px;letter-spacing:.08em;
+}
+.sev-crit{background:rgba(239,68,68,.12);color:var(--danger);}
+.sev-warn{background:rgba(251,146,60,.12);color:var(--warn);}
+.sev-info{background:rgba(56,189,248,.12);color:var(--info);}
+
+/* ─────────────────────────── DRONE CARDS ─────────────────────────── */
+.drone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.drone-card{
+background:var(--surface);border:1px solid var(--border);
+border-radius:18px;padding:24px;position:relative;overflow:hidden;
+transition:transform .25s,border-color .25s;
+}
+.drone-card:hover{transform:translateY(-3px);}
+.drone-card.active-d{border-color:rgba(245,166,35,.22);}
+.drone-card.active-d::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.drone-card.warn-d{border-color:rgba(251,146,60,.2);}
+.drone-card.warn-d::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--warn),transparent);}
+.drone-card.off-d{opacity:.6;}
+.drone-card.off-d::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--muted),transparent);}
+.drone-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.drone-id{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
+.status-pill{display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;padding:4px 10px;border-radius:100px;}
+.sp-on{background:rgba(245,166,35,.1);color:var(--gold);}
+.sp-warn{background:rgba(251,146,60,.1);color:var(--warn);}
+.sp-off{background:rgba(122,92,42,.15);color:var(--muted);}
+.sp-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.4s ease infinite;}
+.drone-model{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:18px;}
+.bat-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em;}
+.bat-pct{font-weight:700;}
+.bat-bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:16px;}
+.bat-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.bat-g{background:linear-gradient(90deg,#d97706,var(--gold));}
+.bat-y{background:linear-gradient(90deg,#ea580c,var(--warn));}
+.bat-r{background:linear-gradient(90deg,#dc2626,var(--danger));animation:blink 1s ease infinite;}
+.drone-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ds-box{background:var(--bg2);border-radius:9px;padding:11px 12px;}
+.ds-lbl{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.ds-val{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);}
+.drone-forest{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;}
+.forest-tag{color:var(--gold2);font-weight:600;font-family:var(--font-body);}
+.forest-state{color:var(--muted);font-family:var(--font-mono);font-size:9px;}
+
+/* ─────────────────────────── MAP ─────────────────────────── */
+.leaflet-container{background:#0d0a00!important;}
+.leaflet-tile{filter:brightness(.5) saturate(1.3) hue-rotate(25deg);}
+.leaflet-control-zoom a{background:var(--surface)!important;color:var(--gold)!important;border-color:var(--border2)!important;}
+.leaflet-control-zoom a:hover{background:var(--surface2)!important;}
+.leaflet-control-attribution{background:rgba(13,10,0,.8)!important;color:var(--muted)!important;font-family:var(--font-mono)!important;font-size:9px!important;}
+.leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border2)!important;border-radius:12px!important;box-shadow:0 12px 32px rgba(0,0,0,.6)!important;}
+.leaflet-popup-tip{background:var(--surface)!important;}
+.leaflet-popup-content{color:var(--text)!important;font-family:var(--font-body)!important;margin:14px 18px!important;}
+.popup-name{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--gold2);margin-bottom:10px;}
+.popup-row{display:flex;justify-content:space-between;gap:24px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);font-family:var(--font-mono);}
+.popup-row:last-child{border-bottom:none;}
+.popup-row span{font-weight:600;color:var(--text);}
+.legend-item{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12px;color:var(--text2);font-family:var(--font-body);}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.f-item{
+background:var(--bg2);border:1px solid var(--border);
+border-radius:9px;padding:11px 12px;cursor:pointer;
+transition:border-color .2s,background .2s;
+display:flex;align-items:center;justify-content:space-between;
+margin-bottom:6px;
+}
+.f-item:hover{border-color:var(--gold);background:rgba(245,166,35,.04);}
+.f-name{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text);}
+.f-state{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;}
+.f-ndvi{font-family:var(--font-display);font-size:13px;font-weight:800;}
+.f-ndvi.hi{color:var(--green2);}
+.f-ndvi.mid{color:var(--gold);}
+.f-ndvi.lo{color:var(--danger);}
+
+/* ─────────────────────────── FLIGHT LOGS TABLE ─────────────────────────── */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.tbl-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.tbl-title{font-family:var(--font-display);font-size:15px;font-weight:700;}
+.tbl-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.tbl-search{
+background:var(--bg2);border:1px solid var(--border2);border-radius:8px;
+padding:7px 12px;color:var(--text);font-family:var(--font-mono);font-size:11px;
+outline:none;width:200px;transition:border-color .2s;
+}
+.tbl-search:focus{border-color:var(--gold);}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--surface2);padding:12px 16px;text-align:left;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:13px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--font-body);transition:background .15s;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.td-id{font-family:var(--font-mono);font-size:10px;color:var(--muted2);}
+.td-drone{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--gold2);}
+.td-crop{font-weight:600;color:var(--text);}
+.ndvi-val{font-family:var(--font-display);font-size:13px;font-weight:700;}
+.ndvi-hi{color:var(--green2);}
+.ndvi-mid{color:var(--gold);}
+.ndvi-lo{color:var(--danger);}
+.st-pill{display:inline-block;font-family:var(--font-display);font-size:9px;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:.05em;}
+.st-done{background:rgba(74,222,128,.1);color:var(--green);}
+.st-fly{background:rgba(56,189,248,.1);color:var(--info);}
+.st-abort{background:rgba(239,68,68,.1);color:var(--danger);}
+
+/* ─────────────────────────── CHARTS ─────────────────────────── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.chart-full{grid-column:span 2;}
+.bar-chart{display:flex;align-items:flex-end;gap:10px;height:200px;padding-top:24px;position:relative;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.bar-fill{width:100%;border-radius:7px 7px 0 0;cursor:pointer;transition:opacity .2s,transform .2s;position:relative;}
+.bar-fill:hover{opacity:.8;transform:scaleY(1.03);transform-origin:bottom;}
+.bar-v{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text);}
+.bar-lbl{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;line-height:1.3;}
+.chart-baseline{position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border2);}
+.bat-chart{display:flex;flex-direction:column;gap:12px;margin-top:4px;}
+.bc-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.bc-drone{font-family:var(--font-body);font-size:12px;font-weight:500;}
+.bc-pct{font-family:var(--font-display);font-size:12px;font-weight:700;}
+.bc-bar{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;}
+.bc-fill{height:100%;border-radius:4px;transition:width 1.2s ease;}
+.donut-area{display:flex;align-items:center;gap:24px;margin-top:8px;}
+.donut-svg{flex-shrink:0;}
+.donut-legend{display:flex;flex-direction:column;gap:8px;}
+.dl-item{display:flex;align-items:center;gap:8px;font-size:12px;font-family:var(--font-body);}
+.dl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.dl-name{flex:1;color:var(--text2);}
+.dl-pct{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--text);}
+
+/* ─────────────────────────── UPLOAD ─────────────────────────── */
+.upload-drop{background:var(--surface);border:2px dashed var(--border2);border-radius:20px;padding:56px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:22px;}
+.upload-drop:hover{border-color:var(--gold);background:rgba(245,166,35,.03);}
+.upload-drop.drag-over{border-color:var(--gold)!important;background:rgba(245,166,35,.06)!important;transform:scale(1.01);}
+.upload-ico{font-size:44px;margin-bottom:16px;}
+.upload-title{font-family:var(--font-display);font-size:18px;font-weight:800;margin-bottom:8px;}
+.upload-sub{font-size:13px;color:var(--muted);line-height:1.6;}
+.upload-btn{background:var(--gold);color:#0d0a00;border:none;border-radius:10px;padding:12px 28px;margin-top:20px;font-family:var(--font-display);font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;}
+.upload-btn:hover{background:var(--gold2);}
+.queue-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.queue-hdr{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.q-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:12px;}
+.q-item:last-child{border-bottom:none;}
+.q-ico{font-size:20px;flex-shrink:0;}
+.q-name{font-weight:600;color:var(--text);font-family:var(--font-body);}
+.q-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.q-prog-wrap{width:90px;flex-shrink:0;}
+.q-prog-bar{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;}
+.q-prog-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 2s ease;}
+.q-status{font-family:var(--font-mono);font-size:9px;margin-top:4px;}
+.q-preview{width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border2);}
+.q-preview-placeholder{width:48px;height:48px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.q-remove{background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:all .15s;flex-shrink:0;}
+.q-remove:hover{color:var(--danger);background:rgba(239,68,68,.1);}
+
+/* pipeline */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:22px;}
+.pipe-step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 14px;text-align:center;}
+.pipe-ico{font-size:26px;margin-bottom:10px;}
+.pipe-num{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:.1em;}
+.pipe-name{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--gold2);margin-bottom:6px;}
+.pipe-desc{font-size:10px;color:var(--muted);line-height:1.5;font-family:var(--font-body);}
+
+/* ─────────────────────────── BACKEND ─────────────────────────── */
+.be-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.be-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;}
+.be-title{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--gold2);margin-bottom:4px;}
+.be-desc{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;font-family:var(--font-body);}
+.be-step{display:flex;align-items:flex-start;gap:12px;background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px;color:var(--text2);font-family:var(--font-body);}
+.be-num{width:22px;height:22px;border-radius:6px;flex-shrink:0;background:rgba(245,166,35,.12);color:var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;font-weight:800;}
+.api-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:8px;padding:9px 12px;margin-bottom:5px;font-family:var(--font-mono);font-size:11px;}
+.method{padding:2px 8px;border-radius:5px;font-family:var(--font-display);font-size:9px;font-weight:800;letter-spacing:.05em;min-width:42px;text-align:center;}
+.m-get{background:rgba(74,222,128,.12);color:var(--green);}
+.m-post{background:rgba(245,166,35,.12);color:var(--gold);}
+.m-del{background:rgba(239,68,68,.12);color:var(--danger);}
+.api-path{color:var(--text2);flex:1;}
+.api-note{font-size:9px;color:var(--muted2);}
+.flow-bar{background:var(--surface);border:1px solid rgba(245,166,35,.15);border-radius:var(--radius);padding:22px 24px;margin-top:16px;}
+.flow-inner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.flow-node{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text2);font-family:var(--font-body);}
+.flow-node.highlight{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.2);color:var(--gold);}
+.flow-arrow{color:var(--muted);font-size:14px;}
+
+/* sec header */
+.sec-hdr{margin-bottom:22px;}
+.sec-hdr h2{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.sec-hdr p{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.03em;}
+
+/* ─────────────────────────── CROP IMAGERY PANEL ─────────────────────────── */
+.fp-overlay{position:fixed;inset:0;z-index:9000;background:rgba(5,4,0,.9);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fpFadeIn .22s ease;}
+.fp-overlay.fp-hidden{display:none;}
+@keyframes fpFadeIn{from{opacity:0}to{opacity:1}}
+.fp-card{background:var(--surface);border:1px solid var(--border2);border-radius:22px;width:min(1020px,96vw);max-height:94vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.8);animation:riseUp .3s cubic-bezier(.16,1,.3,1) both;}
+.fp-hero{position:relative;flex-shrink:0;height:400px;}
+.fp-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:22px 22px 0 0;}
+.fp-topbar{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(0,0,0,.75) 0%,transparent 100%);}
+.fp-brand{font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;letter-spacing:.05em;}
+.fp-live{background:rgba(245,166,35,.18);border:1px solid rgba(245,166,35,.35);border-radius:100px;padding:3px 10px;font-size:9px;color:var(--gold);letter-spacing:.1em;display:flex;align-items:center;gap:5px;}
+.fp-live-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:blink 1.2s ease infinite;}
+.fp-close{width:34px;height:34px;border-radius:9px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.fp-close:hover{background:rgba(239,68,68,.4);border-color:#ef4444;color:#fff;}
+.fp-herofoot{position:absolute;bottom:0;left:0;right:0;padding:20px 22px 18px;background:linear-gradient(0deg,rgba(0,0,0,.82) 0%,transparent 100%);display:flex;align-items:flex-end;justify-content:space-between;}
+.fp-forest-name{font-family:var(--font-display);font-size:30px;font-weight:800;color:#fff;line-height:1;}
+.fp-state{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.55);margin-top:5px;}
+.fp-badge{padding:7px 16px;border-radius:10px;font-family:var(--font-display);font-size:11px;font-weight:800;letter-spacing:.06em;flex-shrink:0;align-self:flex-end;}
+.fpb-healthy{background:rgba(74,222,128,.2);color:#4ade80;border:1px solid rgba(74,222,128,.4);}
+.fpb-moderate{background:rgba(245,166,35,.2);color:#f5a623;border:1px solid rgba(245,166,35,.4);}
+.fpb-critical{background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.4);}
+.fp-body{padding:22px 24px 24px;overflow-y:auto;flex:1;}
+.fp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.fp-stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 15px;}
+.fp-stat-lbl{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px;}
+.fp-stat-val{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);line-height:1;}
+.fp-stat-sub{font-family:var(--font-body);font-size:10px;color:var(--muted);margin-top:4px;}
+.fp-ndvi-row{margin-bottom:20px;}
+.fp-ndvi-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.fp-ndvi-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text2);}
+.fp-ndvi-score{font-family:var(--font-display);font-size:18px;font-weight:800;}
+.fp-ndvi-track{height:16px;border-radius:8px;position:relative;overflow:visible;background:linear-gradient(90deg,#b91c1c,#ef4444 15%,#f59e0b 35%,#eab308 50%,#84cc16 65%,#22c55e 82%,#15803d);}
+.fp-ndvi-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.6);transition:left .9s cubic-bezier(.16,1,.3,1);display:flex;align-items:center;justify-content:center;}
+.fp-ndvi-pin::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--pin-col,#f5a623);}
+.fp-ndvi-axis{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:6px;}
+.fp-lower{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+.fp-section-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;}
+.fp-alerts{display:flex;flex-direction:column;gap:7px;}
+.fp-alert{display:flex;align-items:flex-start;gap:10px;background:var(--bg2);border-radius:9px;padding:10px 12px;border-left:3px solid;}
+.fp-alert.crit{border-color:#ef4444;}
+.fp-alert.warn{border-color:#f59e0b;}
+.fp-alert.ok{border-color:#22c55e;}
+.fp-alert-ico{font-size:14px;flex-shrink:0;margin-top:1px;}
+.fp-alert-txt{font-size:11px;color:var(--text2);flex:1;line-height:1.4;font-family:var(--font-body);}
+.fp-alert-time{font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0;margin-top:1px;}
+.fp-ring-wrap{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.fp-ring{position:relative;width:72px;height:72px;flex-shrink:0;}
+.fp-ring svg{transform:rotate(-90deg);}
+.fp-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:15px;font-weight:800;color:var(--text);}
+.fp-ring-info .fp-ri-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.fp-ring-info .fp-ri-sub{font-family:var(--font-body);font-size:11px;color:var(--muted);line-height:1.5;}
+.fp-mission{display:flex;flex-direction:column;gap:0;}
+.fp-mrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.fp-mrow:last-child{border-bottom:none;}
+.fp-mrow-lbl{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.fp-mrow-val{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text);}
+
+/* ─────────────────────────── ANALYSIS MODAL ─────────────────────────── */
+.analysis-overlay{position:fixed;inset:0;z-index:9500;background:rgba(5,4,0,.92);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fpFadeIn .22s ease;}
+.analysis-overlay.an-hidden{display:none;}
+.analysis-modal{background:var(--surface);border:1px solid var(--border2);border-radius:22px;width:min(740px,96vw);box-shadow:0 40px 100px rgba(0,0,0,.7);animation:riseUp .32s cubic-bezier(.16,1,.3,1) both;overflow:hidden;}
+.an-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.an-title{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);}
+.an-step-pills{display:flex;gap:6px;}
+.an-pill{width:28px;height:6px;border-radius:3px;background:var(--border2);transition:background .3s;}
+.an-pill.done{background:var(--green2);}
+.an-pill.active{background:var(--gold);}
+.an-body{padding:24px;}
+.an-preview{width:100%;height:170px;border-radius:12px;object-fit:cover;margin-bottom:20px;border:1px solid var(--border);display:block;}
+.an-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:7px;display:block;}
+.an-select{width:100%;background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;font-weight:500;outline:none;cursor:pointer;margin-bottom:16px;transition:border-color .2s;appearance:none;}
+.an-select:focus{border-color:var(--gold);}
+.an-select option{background:var(--surface);}
+.an-scan-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+.an-scan-bar-track{height:10px;background:var(--border2);border-radius:5px;overflow:hidden;margin-bottom:12px;}
+.an-scan-bar-fill{height:100%;border-radius:5px;width:0%;background:linear-gradient(90deg,#92400e,var(--gold));transition:width .12s linear;}
+.an-scan-steps{display:flex;flex-direction:column;gap:5px;}
+.an-scan-step{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:10px;color:var(--muted);transition:color .3s;}
+.an-scan-step.done{color:var(--green);}
+.an-scan-step.active{color:var(--gold);}
+.an-scan-step .ss-ico{width:16px;text-align:center;flex-shrink:0;}
+.an-results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.an-result-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;text-align:center;}
+.an-rc-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px;}
+.an-rc-val{font-family:var(--font-display);font-size:20px;font-weight:800;}
+.an-rc-sub{font-family:var(--font-body);font-size:10px;color:var(--muted);margin-top:3px;}
+.an-actions{display:flex;gap:10px;}
+.an-btn-primary{flex:1;background:var(--gold);color:#0d0a00;border:none;border-radius:10px;padding:12px;font-family:var(--font-display);font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;}
+.an-btn-primary:hover{background:var(--gold2);}
+.an-btn-secondary{background:transparent;border:1px solid var(--border2);border-radius:10px;padding:12px 20px;font-family:var(--font-body);font-size:13px;color:var(--muted);cursor:pointer;}
+.an-btn-secondary:hover{border-color:var(--danger);color:var(--danger);}
+
+/* upload success toast */
+.upload-success-flash{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid rgba(245,166,35,.35);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);font-family:var(--font-body);font-size:13px;animation:slideUp .3s cubic-bezier(.16,1,.3,1) both;z-index:9999;}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+/* map info panel */
+.map-info-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.map-info-section:last-child{border-bottom:none;}
+.map-info-title{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;}
+.map-stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.map-stat-row:last-child{border-bottom:none;}
+.map-stat-lbl{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.map-stat-val{font-family:var(--font-body);font-size:11px;font-weight:600;color:var(--text);}
+.map-ndvi-mini{height:8px;border-radius:4px;background:linear-gradient(90deg,#b91c1c,#ef4444 12%,#f59e0b 35%,#eab308 50%,#84cc16 65%,#22c55e 82%,#15803d);position:relative;margin:8px 0 4px;}
+.map-ndvi-mini-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid var(--bg2);box-shadow:0 1px 6px rgba(0,0,0,.5);transition:left .7s cubic-bezier(.16,1,.3,1);}
+.map-alert-row{display:flex;align-items:flex-start;gap:8px;padding:7px;border-radius:8px;margin-bottom:5px;border-left:2px solid;font-size:10px;background:var(--bg2);font-family:var(--font-body);}
+.map-alert-row.crit{border-color:var(--danger);}
+.map-alert-row.warn{border-color:var(--warn);}
+.map-alert-row.ok{border-color:var(--green2);}
+.map-alert-ico{font-size:12px;flex-shrink:0;margin-top:1px;}
+.map-alert-txt{color:var(--text2);flex:1;line-height:1.4;}
+.map-alert-time{font-family:var(--font-mono);font-size:8px;color:var(--muted);flex-shrink:0;}
+.map-view-full-btn{width:calc(100% - 32px);margin:0 16px 16px;background:var(--gold);color:#0d0a00;border:none;border-radius:10px;padding:10px;font-family:var(--font-display);font-size:12px;font-weight:800;cursor:pointer;transition:all .2s;display:block;}
+.map-view-full-btn:hover{background:var(--gold2);transform:translateY(-1px);}
+.map-upload-thumb{width:100%;border-radius:7px;object-fit:cover;max-height:110px;display:block;border:1px solid var(--border2);margin-bottom:7px;cursor:pointer;}
+
+/* ─────────────────────────── ANIMATIONS ─────────────────────────── */
+@keyframes riseUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* ─────────────────────────── RESPONSIVE ─────────────────────────── */
+@media(max-width:1100px){
+.kpi-row{grid-template-columns:1fr 1fr;}
+.chart-row{grid-template-columns:1fr;}
+.drone-grid{grid-template-columns:1fr 1fr;}
+.charts-grid{grid-template-columns:1fr;}
+.chart-full{grid-column:span 1;}
+.be-grid{grid-template-columns:1fr;}
+.pipeline{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:780px){
+.sidebar{transform:translateX(-100%);}
+.main{margin-left:0;}
+.drone-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<div id="loginPage">
+<div class="login-card">
+<div class="login-brand">
+<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="36" height="36" rx="10" fill="rgba(245,166,35,.15)"/>
+<path d="M18 6 C10 6 6 12 6 18 C6 26 12 30 18 30 C24 30 30 26 30 18 C30 12 26 6 18 6Z" stroke="#f5a623" stroke-width="1.5" fill="none"/>
+<path d="M12 20 Q15 14 18 18 Q21 22 24 16" stroke="#f5a623" stroke-width="2" fill="none" stroke-linecap="round"/>
+<circle cx="18" cy="18" r="2.5" fill="#fbbf24"/>
+<path d="M18 8 L18 6 M18 30 L18 32 M6 18 L4 18 M32 18 L30 18" stroke="#f5a623" stroke-width="1" opacity=".4"/>
+</svg>
+CropWatch
+</div>
+<div class="login-tagline">// India Drone Crop Intelligence Platform</div>
+<label class="lbl">Officer Email</label>
+<input class="inp" type="text" placeholder="officer@cropwatch.in" id="lu">
+<label class="lbl">Access Key</label>
+<input class="inp" type="password" placeholder="••••••••" id="lp">
+<button class="login-btn" onclick="doLogin()">LAUNCH DASHBOARD →</button>
+<div class="login-hint">Demo — press login with any credentials &nbsp;<span>↑</span></div>
+</div>
+</div>
+
+<!-- ═══════════════════ APP ═══════════════════ -->
+<div id="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+<div class="sb-logo">
+<svg width="26" height="26" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="10" fill="rgba(245,166,35,.15)"/><path d="M12 20 Q15 14 18 18 Q21 22 24 16" stroke="#f5a623" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="18" cy="18" r="2.5" fill="#fbbf24"/></svg>
+<div class="sb-logo-text">CropWatch</div>
+<div class="sb-logo-badge">v1.0</div>
+</div>
+<div class="sb-section">Overview</div>
+<div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+<div class="nav-item" onclick="nav('drones',this)"><span class="nav-icon">🚁</span>Drone Fleet</div>
+<div class="nav-item" onclick="nav('map',this)"><span class="nav-icon">🗺️</span>Crop Map</div>
+<div class="sb-section">Data</div>
+<div class="nav-item" onclick="nav('upload',this)"><span class="nav-icon">📤</span>Upload Scan</div>
+<div class="nav-item" onclick="nav('logs',this)"><span class="nav-icon">📋</span>Scan Logs</div>
+<div class="nav-item" onclick="nav('charts',this)"><span class="nav-icon">📈</span>Analytics</div>
+<div class="sb-section">System</div>
+<div class="nav-item" onclick="nav('backend',this)">
+<span class="nav-icon">🧠</span>Backend Logic
+<span class="nav-badge">NEW</span>
+</div>
+<div class="sb-bottom">
+<div class="user-card">
+<div class="user-av">🌾</div>
+<div>
+<div class="user-name">Dr. Priya Mehta</div>
+<div class="user-role">Agri Officer · ICAR</div>
+</div>
+</div>
+<button class="logout-btn" onclick="doLogout()">⏻ &nbsp;Sign Out</button>
+</div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+<header class="topbar">
+<div class="topbar-title" id="pageTitle">Dashboard</div>
+<div class="topbar-right">
+<div class="live-pill"><span class="live-dot"></span>LIVE FEED</div>
+<div class="topbar-clock">IST &nbsp;<span id="clock">--:--:--</span></div>
+<div class="notif-btn">🔔<span class="notif-count">4</span></div>
+</div>
+</header>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div class="panel active" id="panel-dashboard">
+<div class="kpi-row">
+<div class="kpi gold">
+<div class="kpi-icon">🚁</div>
+<div class="kpi-label">Active Drones</div>
+<div class="kpi-val">07</div>
+<div class="kpi-sub">of 10 deployed across India</div>
+</div>
+<div class="kpi green">
+<div class="kpi-icon">🌾</div>
+<div class="kpi-label">Avg NDVI Score</div>
+<div class="kpi-val">0.58</div>
+<div class="kpi-sub">↑ 0.03 this week</div>
+</div>
+<div class="kpi warn">
+<div class="kpi-icon">⚠️</div>
+<div class="kpi-label">Crop Stress Alerts</div>
+<div class="kpi-val">05</div>
+<div class="kpi-sub">3 drought, 2 pest</div>
+</div>
+<div class="kpi red">
+<div class="kpi-icon">📡</div>
+<div class="kpi-label">Area Scanned Today</div>
+<div class="kpi-val">1,240<span style="font-size:18px">km²</span></div>
+<div class="kpi-sub">across 6 regions</div>
+</div>
+</div>
+
+<div class="chart-row">
+<div class="card">
+<div class="card-title">NDVI Health Trend — 8 Week History</div>
+<div class="card-sub">Vegetation index average across all monitored Indian crop zones</div>
+<svg class="svg-wrap" height="170" viewBox="0 0 580 170">
+<defs>
+<linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#f5a623" stop-opacity=".28"/>
+<stop offset="100%" stop-color="#f5a623" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<line x1="0" y1="42" x2="580" y2="42" stroke="#2e2500" stroke-width="1"/>
+<line x1="0" y1="84" x2="580" y2="84" stroke="#2e2500" stroke-width="1"/>
+<line x1="0" y1="126" x2="580" y2="126" stroke="#2e2500" stroke-width="1"/>
+<path d="M20,110 L93,95 L166,100 L239,75 L312,80 L385,60 L458,65 L530,55 L530,168 L20,168 Z" fill="url(#g1)"/>
+<polyline points="20,110 93,95 166,100 239,75 312,80 385,60 458,65 530,55" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="20" cy="110" r="4" fill="#f5a623"/>
+<circle cx="93" cy="95" r="4" fill="#f5a623"/>
+<circle cx="166" cy="100" r="4" fill="#f5a623"/>
+<circle cx="239" cy="75" r="4" fill="#f5a623"/>
+<circle cx="312" cy="80" r="4" fill="#f5a623"/>
+<circle cx="385" cy="60" r="4" fill="#f5a623"/>
+<circle cx="458" cy="65" r="4" fill="#f5a623"/>
+<circle cx="530" cy="55" r="5" fill="#fbbf24" stroke="#f5a623" stroke-width="2"/>
+<text x="14" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W1</text>
+<text x="87" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W2</text>
+<text x="160" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W3</text>
+<text x="233" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W4</text>
+<text x="306" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W5</text>
+<text x="379" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W6</text>
+<text x="452" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W7</text>
+<text x="523" y="165" fill="#5a4020" font-size="10" font-family="Space Mono">W8</text>
+<text x="4" y="40" fill="#5a4020" font-size="9" font-family="Space Mono">0.80</text>
+<text x="4" y="82" fill="#5a4020" font-size="9" font-family="Space Mono">0.60</text>
+<text x="4" y="124" fill="#5a4020" font-size="9" font-family="Space Mono">0.40</text>
+</svg>
+</div>
+<div class="card">
+<div class="card-title">Crop Health Distribution</div>
+<div class="card-sub">Field area by crop health status</div>
+<div class="donut-area">
+<svg class="donut-svg" width="150" height="150" viewBox="0 0 150 150">
+<circle cx="75" cy="75" r="55" fill="none" stroke="#1c1600" stroke-width="26"/>
+<circle cx="75" cy="75" r="55" fill="none" stroke="#22c55e" stroke-width="26" stroke-dasharray="190 156" stroke-dashoffset="0" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="55" fill="none" stroke="#f5a623" stroke-width="26" stroke-dasharray="105 241" stroke-dashoffset="-190" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="55" fill="none" stroke="#ef4444" stroke-width="26" stroke-dasharray="51 295" stroke-dashoffset="-295" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="42" fill="#141000"/>
+<text x="75" y="71" text-anchor="middle" fill="#fef9e7" font-size="18" font-weight="800" font-family="Fraunces">54%</text>
+<text x="75" y="86" text-anchor="middle" fill="#7a5c2a" font-size="9" font-family="Space Mono">HEALTHY</text>
+</svg>
+<div class="donut-legend">
+<div class="dl-item"><div class="dl-dot" style="background:#22c55e"></div><span class="dl-name">Healthy</span><span class="dl-pct">54%</span></div>
+<div class="dl-item"><div class="dl-dot" style="background:#f5a623"></div><span class="dl-name">Stressed</span><span class="dl-pct">29%</span></div>
+<div class="dl-item"><div class="dl-dot" style="background:#ef4444"></div><span class="dl-name">Critical</span><span class="dl-pct">17%</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="sec-hdr"><h2>Crop Stress Alerts</h2><p>AI-generated risk flags from latest drone scans · sorted by severity</p></div>
+<div class="alert-list">
+<div class="alert-item crit">
+<div class="alert-ico">🔴</div>
+<div style="flex:1">
+<div class="alert-title">Severe Drought Stress — Punjab Wheat Belt, Zone 3B</div>
+<div class="alert-meta">NDVI fell 0.71 → 0.28 &nbsp;·&nbsp; Drone CW-03 &nbsp;·&nbsp; 3 hours ago &nbsp;·&nbsp; 42.6 km² affected</div>
+</div>
+<span class="sev-pill sev-crit">CRITICAL</span>
+</div>
+<div class="alert-item crit">
+<div class="alert-ico">🔴</div>
+<div style="flex:1">
+<div class="alert-title">Pest Infestation Detected — Vidarbha Cotton Fields, Maharashtra</div>
+<div class="alert-meta">Thermal anomaly + NDVI drop &nbsp;·&nbsp; Drone CW-07 &nbsp;·&nbsp; 6 hours ago &nbsp;·&nbsp; 18.3 km² affected</div>
+</div>
+<span class="sev-pill sev-crit">CRITICAL</span>
+</div>
+<div class="alert-item warn">
+<div class="alert-ico">🟡</div>
+<div style="flex:1">
+<div class="alert-title">Waterlogging Risk — Uttar Pradesh Sugarcane Zone, Eastern Region</div>
+<div class="alert-meta">EVI declining &nbsp;·&nbsp; Drone CW-02 &nbsp;·&nbsp; 1 day ago &nbsp;·&nbsp; Possible soil saturation</div>
+</div>
+<span class="sev-pill sev-warn">MODERATE</span>
+</div>
+</div>
+</div>
+
+<!-- ══════════ DRONE FLEET ══════════ -->
+<div class="panel" id="panel-drones">
+<div class="sec-hdr"><h2>Drone Fleet</h2><p>Real-time status of all deployed crop monitoring drones across India</p></div>
+<div class="drone-grid">
+<div class="drone-card active-d">
+<div class="drone-head"><div class="drone-id">CW-01</div><div class="status-pill sp-on"><span class="sp-dot"></span>Active</div></div>
+<div class="drone-model">DJI Matrice 300 RTK · Multispectral</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct" style="color:var(--gold)">82%</span></div>
+<div class="bat-bar"><div class="bat-fill bat-g" style="width:82%"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Altitude</div><div class="ds-val">80 m</div></div>
+<div class="ds-box"><div class="ds-lbl">Speed</div><div class="ds-val">12 m/s</div></div>
+<div class="ds-box"><div class="ds-lbl">Scanned</div><div class="ds-val">198 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Flight Time</div><div class="ds-val">3h 22m</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag">🌾 Punjab Wheat Belt</span><span class="forest-state">Punjab</span></div>
+</div>
+<div class="drone-card active-d">
+<div class="drone-head"><div class="drone-id">CW-02</div><div class="status-pill sp-on"><span class="sp-dot"></span>Active</div></div>
+<div class="drone-model">DJI Mavic 3 Multispectral</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct" style="color:var(--gold)">61%</span></div>
+<div class="bat-bar"><div class="bat-fill bat-g" style="width:61%"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Altitude</div><div class="ds-val">70 m</div></div>
+<div class="ds-box"><div class="ds-lbl">Speed</div><div class="ds-val">10 m/s</div></div>
+<div class="ds-box"><div class="ds-lbl">Scanned</div><div class="ds-val">112 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Flight Time</div><div class="ds-val">2h 05m</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag">🍬 UP Sugarcane Zone</span><span class="forest-state">Uttar Pradesh</span></div>
+</div>
+<div class="drone-card warn-d">
+<div class="drone-head"><div class="drone-id">CW-03</div><div class="status-pill sp-warn"><span class="sp-dot"></span>Low Battery</div></div>
+<div class="drone-model">DJI Matrice 300 RTK · LiDAR</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct" style="color:var(--danger)">11%</span></div>
+<div class="bat-bar"><div class="bat-fill bat-r" style="width:11%"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Altitude</div><div class="ds-val">100 m</div></div>
+<div class="ds-box"><div class="ds-lbl">Speed</div><div class="ds-val">9 m/s</div></div>
+<div class="ds-box"><div class="ds-lbl">Scanned</div><div class="ds-val">287 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Flight Time</div><div class="ds-val">5h 12m</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag">🌶️ Vidarbha Cotton Zone</span><span class="forest-state">Maharashtra</span></div>
+</div>
+<div class="drone-card active-d">
+<div class="drone-head"><div class="drone-id">CW-05</div><div class="status-pill sp-on"><span class="sp-dot"></span>Active</div></div>
+<div class="drone-model">Parrot Anafi Thermal</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct" style="color:var(--gold)">74%</span></div>
+<div class="bat-bar"><div class="bat-fill bat-g" style="width:74%"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Altitude</div><div class="ds-val">90 m</div></div>
+<div class="ds-box"><div class="ds-lbl">Speed</div><div class="ds-val">14 m/s</div></div>
+<div class="ds-box"><div class="ds-lbl">Scanned</div><div class="ds-val">224 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Flight Time</div><div class="ds-val">3h 48m</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag">🍚 Andhra Rice Delta</span><span class="forest-state">Andhra Pradesh</span></div>
+</div>
+<div class="drone-card off-d">
+<div class="drone-head"><div class="drone-id">CW-07</div><div class="status-pill sp-off">⬤ Charging</div></div>
+<div class="drone-model">DJI Matrice 300 RTK · RGB+MS</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct">6% — Charging</span></div>
+<div class="bat-bar"><div class="bat-fill" style="width:6%;background:var(--muted)"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Status</div><div class="ds-val" style="color:var(--muted)">Offline</div></div>
+<div class="ds-box"><div class="ds-lbl">ETA Ready</div><div class="ds-val">52 min</div></div>
+<div class="ds-box"><div class="ds-lbl">Last Area</div><div class="ds-val">134 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Missions</div><div class="ds-val">88</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag" style="color:var(--muted)">🧅 Rajasthan Drylands</span><span class="forest-state">Rajasthan</span></div>
+</div>
+<div class="drone-card active-d">
+<div class="drone-head"><div class="drone-id">CW-09</div><div class="status-pill sp-on"><span class="sp-dot"></span>Active</div></div>
+<div class="drone-model">WingtraOne GEN II Fixed-Wing</div>
+<div class="bat-row"><span>Battery</span><span class="bat-pct" style="color:var(--gold)">88%</span></div>
+<div class="bat-bar"><div class="bat-fill bat-g" style="width:88%"></div></div>
+<div class="drone-stats">
+<div class="ds-box"><div class="ds-lbl">Altitude</div><div class="ds-val">250 m</div></div>
+<div class="ds-box"><div class="ds-lbl">Speed</div><div class="ds-val">20 m/s</div></div>
+<div class="ds-box"><div class="ds-lbl">Scanned</div><div class="ds-val">418 km²</div></div>
+<div class="ds-box"><div class="ds-lbl">Flight Time</div><div class="ds-val">4h 55m</div></div>
+</div>
+<div class="drone-forest"><span class="forest-tag">🌽 MP Soybean Belt</span><span class="forest-state">Madhya Pradesh</span></div>
+</div>
+</div>
+</div>
+
+<!-- ══════════ CROP MAP ══════════ -->
+<div class="panel panel-map-special" id="panel-map" style="padding:0;">
+<div style="padding:16px 24px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);flex-shrink:0;">
+<div>
+<div style="font-family:var(--font-display);font-size:18px;font-weight:800;">India Crop Health Map</div>
+<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px;">Click any marker or region name to view drone imagery · 25 farming regions</div>
+</div>
+<div style="display:flex;gap:14px;font-family:var(--font-mono);font-size:10px;color:var(--muted);align-items:center;">
+<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:4px;"></span>Healthy</span>
+<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5a623;margin-right:4px;"></span>Stressed</span>
+<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:4px;"></span>Critical</span>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:230px 1fr 0px;flex:1;overflow:hidden;min-height:0;transition:grid-template-columns .35s cubic-bezier(.16,1,.3,1);" id="mapBodyGrid">
+<div style="border-right:1px solid var(--border);overflow-y:auto;background:var(--surface);">
+<div style="padding:12px 14px 6px;font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.16em;">25 Regions Monitored</div>
+<div id="forestList" style="padding:0 8px 12px;"></div>
+<div style="padding:10px 14px 6px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.16em;">Legend</div>
+<div style="padding:0 14px 16px;">
+<div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Healthy (NDVI &gt; 0.6)</div>
+<div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div>Stressed (0.4–0.6)</div>
+<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Critical (&lt; 0.4)</div>
+</div>
+</div>
+<div style="position:relative;overflow:hidden;">
+<div id="leaflet-map" style="width:100%;height:100%;min-height:500px;"></div>
+<div id="mapSelectedChip" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(13,10,0,.92);border:1px solid var(--border2);border-radius:100px;padding:8px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text);backdrop-filter:blur(8px);z-index:500;align-items:center;gap:10px;white-space:nowrap;">
+<span id="mapChipDot" style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>
+<span id="mapChipName"></span>
+<span id="mapChipNdvi" style="font-family:var(--font-mono);font-size:11px;color:var(--gold2);"></span>
+<span onclick="closeInlinePanel()" style="cursor:pointer;color:var(--muted);font-size:16px;padding-left:6px;line-height:1;">✕</span>
+</div>
+</div>
+<div id="mapInfoPanel" style="overflow-y:auto;background:var(--surface);border-left:1px solid var(--border);">
+<div id="mapInfoContent"></div>
+</div>
+</div>
+</div>
+
+<!-- ══════════ UPLOAD ══════════ -->
+<div class="panel" id="panel-upload">
+<div class="sec-hdr"><h2>Upload Drone Scan</h2><p>Upload GeoTIFF, multispectral, or CSV telemetry files from crop monitoring missions</p></div>
+<input type="file" id="realFileInput" multiple accept="image/*,.tif,.tiff,.las,.csv,.jpeg,.jpg,.png,.jp2" style="display:none" onchange="handleFileSelect(this.files)">
+<div class="upload-drop" id="uploadDropZone">
+<div class="upload-ico" id="uploadIco">📡</div>
+<div class="upload-title">Drop crop scan imagery here</div>
+<div class="upload-sub">Supports GeoTIFF · LAS · JPEG2000 · JPG · PNG · CSV telemetry<br>Any file size · Drag & drop or click to browse</div>
+<button class="upload-btn" onclick="document.getElementById('realFileInput').click()">SELECT FILES</button>
+</div>
+<div class="queue-card">
+<div class="queue-hdr">
+<div>
+<div style="font-family:var(--font-display);font-size:14px;font-weight:700;">Upload Queue</div>
+<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px;" id="queueCount">3 demo files · Processing</div>
+</div>
+<button onclick="clearUserUploads()" style="background:transparent;border:1px solid var(--border2);border-radius:7px;padding:5px 12px;color:var(--muted);font-family:var(--font-mono);font-size:10px;cursor:pointer;" id="clearBtn">Clear uploads</button>
+</div>
+<div class="q-item">
+<div class="q-ico">🛰️</div>
+<div style="flex:1">
+<div class="q-name">punjab_wheat_scan_20250310.tif</div>
+<div class="q-meta">Punjab Wheat Belt · 623 MB</div>
+</div>
+<div class="q-prog-wrap">
+<div class="q-prog-bar"><div class="q-prog-fill" style="width:100%"></div></div>
+<div class="q-status" style="color:var(--green)">✓ NDVI Complete</div>
+</div>
+</div>
+<div class="q-item">
+<div class="q-ico">🛰️</div>
+<div style="flex:1">
+<div class="q-name">vidarbha_cotton_lidar_20250310.las</div>
+<div class="q-meta">Vidarbha Cotton Zone · 1.1 GB</div>
+</div>
+<div class="q-prog-wrap">
+<div class="q-prog-bar"><div class="q-prog-fill" id="qp2" style="width:62%"></div></div>
+<div class="q-status" style="color:var(--gold)" id="qs2">Processing...</div>
+</div>
+</div>
+<div class="q-item">
+<div class="q-ico">📊</div>
+<div style="flex:1">
+<div class="q-name">up_sugarcane_telemetry_CW02.csv</div>
+<div class="q-meta">UP Sugarcane Zone · 8 MB</div>
+</div>
+<div class="q-prog-wrap">
+<div class="q-prog-bar"><div class="q-prog-fill" id="qp3" style="width:18%"></div></div>
+<div class="q-status" style="color:var(--muted)">Queued</div>
+</div>
+</div>
+<div id="userUploadsContainer"></div>
+</div>
+<div class="sec-hdr" style="margin-top:28px;"><h2>Processing Pipeline</h2><p>What the backend does after every scan upload</p></div>
+<div class="pipeline">
+<div class="pipe-step"><div class="pipe-ico">📤</div><div class="pipe-num">STEP 01</div><div class="pipe-name">Upload</div><div class="pipe-desc">File sent to S3 via presigned URL — raw data stored securely</div></div>
+<div class="pipe-step"><div class="pipe-ico">🔍</div><div class="pipe-num">STEP 02</div><div class="pipe-name">Validate</div><div class="pipe-desc">GDAL extracts GPS coordinates, spectral bands, and resolution metadata</div></div>
+<div class="pipe-step"><div class="pipe-ico">🧮</div><div class="pipe-num">STEP 03</div><div class="pipe-name">Compute</div><div class="pipe-desc">Celery worker runs NDVI, EVI, SAVI calculations via NumPy + Rasterio</div></div>
+<div class="pipe-step"><div class="pipe-ico">💾</div><div class="pipe-num">STEP 04</div><div class="pipe-name">Store</div><div class="pipe-desc">Results saved to PostgreSQL + PostGIS with spatial crop zone geometry</div></div>
+<div class="pipe-step"><div class="pipe-ico">🚨</div><div class="pipe-num">STEP 05</div><div class="pipe-name">Alert</div><div class="pipe-desc">Stress model flags zones · pushes via WebSocket + SMS to field officers</div></div>
+</div>
+</div>
+
+<!-- ══════════ SCAN LOGS ══════════ -->
+<div class="panel" id="panel-logs">
+<div class="sec-hdr"><h2>Scan Logs</h2><p>Complete mission history across all Indian crop zones</p></div>
+<div class="tbl-wrap">
+<div class="tbl-header">
+<div>
+<div class="tbl-title">All Missions</div>
+<div class="tbl-sub">10 records · sorted by date</div>
+</div>
+<input class="tbl-search" placeholder="🔍 Search mission, drone, region..." oninput="filterTable(this)">
+</div>
+<table id="logTable">
+<thead>
+<tr>
+<th>Mission</th><th>Drone</th><th>Region</th><th>State</th>
+<th>Date</th><th>Duration</th><th>Area</th><th>NDVI</th><th>Status</th>
+</tr>
+</thead>
+<tbody id="logBody">
+<tr><td class="td-id">MSN-3041</td><td class="td-drone">CW-01</td><td class="td-crop">Punjab Wheat Belt Z3B</td><td>Punjab</td><td>2025-03-10</td><td>5h 20m</td><td>287 km²</td><td><span class="ndvi-val ndvi-lo">0.28</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3040</td><td class="td-drone">CW-07</td><td class="td-crop">Vidarbha Cotton Zone</td><td>Maharashtra</td><td>2025-03-10</td><td>4h 10m</td><td>198 km²</td><td><span class="ndvi-val ndvi-lo">0.33</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3039</td><td class="td-drone">CW-02</td><td class="td-crop">UP Sugarcane East</td><td>Uttar Pradesh</td><td>2025-03-09</td><td>3h 15m</td><td>112 km²</td><td><span class="ndvi-val ndvi-mid">0.51</span></td><td><span class="st-pill st-fly">In Flight</span></td></tr>
+<tr><td class="td-id">MSN-3038</td><td class="td-drone">CW-09</td><td class="td-crop">MP Soybean Belt</td><td>Madhya Pradesh</td><td>2025-03-09</td><td>6h 02m</td><td>418 km²</td><td><span class="ndvi-val ndvi-hi">0.79</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3037</td><td class="td-drone">CW-05</td><td class="td-crop">Andhra Rice Delta</td><td>Andhra Pradesh</td><td>2025-03-09</td><td>3h 48m</td><td>224 km²</td><td><span class="ndvi-val ndvi-hi">0.76</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3036</td><td class="td-drone">CW-03</td><td class="td-crop">Rajasthan Drylands</td><td>Rajasthan</td><td>2025-03-08</td><td>2h 40m</td><td>142 km²</td><td><span class="ndvi-val ndvi-lo">0.29</span></td><td><span class="st-pill st-abort">Aborted</span></td></tr>
+<tr><td class="td-id">MSN-3035</td><td class="td-drone">CW-01</td><td class="td-crop">Haryana Paddy Fields</td><td>Haryana</td><td>2025-03-08</td><td>4h 30m</td><td>218 km²</td><td><span class="ndvi-val ndvi-hi">0.72</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3034</td><td class="td-drone">CW-05</td><td class="td-crop">Karnataka Ragi Zone</td><td>Karnataka</td><td>2025-03-07</td><td>3h 55m</td><td>188 km²</td><td><span class="ndvi-val ndvi-mid">0.57</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3033</td><td class="td-drone">CW-09</td><td class="td-crop">Gujarat Groundnut Belt</td><td>Gujarat</td><td>2025-03-07</td><td>5h 10m</td><td>312 km²</td><td><span class="ndvi-val ndvi-mid">0.48</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+<tr><td class="td-id">MSN-3032</td><td class="td-drone">CW-02</td><td class="td-crop">Tamil Nadu Banana Plantations</td><td>Tamil Nadu</td><td>2025-03-06</td><td>2h 50m</td><td>96 km²</td><td><span class="ndvi-val ndvi-hi">0.83</span></td><td><span class="st-pill st-done">Complete</span></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ══════════ ANALYTICS ══════════ -->
+<div class="panel" id="panel-charts">
+<div class="sec-hdr"><h2>Analytics</h2><p>Deep-dive crop health trends across monitored Indian agricultural zones</p></div>
+<div class="charts-grid">
+<div class="card chart-full">
+<div class="card-title">NDVI Score by Region — Current Reading</div>
+<div class="card-sub">Higher = healthier crop. Below 0.4 = critical stress risk. Action required immediately.</div>
+<div class="bar-chart">
+<div class="chart-baseline"></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--green2)">0.83</div><div class="bar-fill bat-g" style="height:166px;background:linear-gradient(180deg,#d97706,#f5a623)"></div><div class="bar-lbl">Tamil<br>Nadu</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--green2)">0.79</div><div class="bar-fill bat-g" style="height:158px;background:linear-gradient(180deg,#d97706,#f5a623)"></div><div class="bar-lbl">MP<br>Soybean</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--green2)">0.76</div><div class="bar-fill bat-g" style="height:152px;background:linear-gradient(180deg,#d97706,#f5a623)"></div><div class="bar-lbl">Andhra<br>Rice</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--green2)">0.72</div><div class="bar-fill bat-g" style="height:144px;background:linear-gradient(180deg,#d97706,#f5a623)"></div><div class="bar-lbl">Haryana<br>Paddy</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--gold)">0.57</div><div class="bar-fill bat-y" style="height:114px;background:linear-gradient(180deg,#92400e,#fb923c)"></div><div class="bar-lbl">Karnataka<br>Ragi</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--gold)">0.51</div><div class="bar-fill bat-y" style="height:102px;background:linear-gradient(180deg,#92400e,#fb923c)"></div><div class="bar-lbl">UP<br>Sugar</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--gold)">0.48</div><div class="bar-fill bat-y" style="height:96px;background:linear-gradient(180deg,#92400e,#fb923c)"></div><div class="bar-lbl">Gujarat<br>G'nut</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--danger)">0.33</div><div class="bar-fill bat-r" style="height:66px;background:linear-gradient(180deg,#7f1d1d,#ef4444)"></div><div class="bar-lbl">Vidarbha<br>Cotton</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--danger)">0.29</div><div class="bar-fill bat-r" style="height:58px;background:linear-gradient(180deg,#7f1d1d,#ef4444)"></div><div class="bar-lbl">Rajasthan<br>Dry</div></div>
+<div class="bar-col"><div class="bar-v" style="color:var(--danger)">0.28</div><div class="bar-fill bat-r" style="height:56px;background:linear-gradient(180deg,#7f1d1d,#ef4444)"></div><div class="bar-lbl">Punjab<br>Wheat</div></div>
+</div>
+<div style="display:flex;gap:22px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:3px;background:#f5a623"></div>Healthy ≥ 0.6</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:3px;background:#fb923c"></div>Stressed 0.4–0.6</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);"><div style="width:10px;height:10px;border-radius:3px;background:#ef4444"></div>Critical &lt; 0.4</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Battery — Active Fleet</div>
+<div class="card-sub">Current charge levels</div>
+<div class="bat-chart">
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-09 · MP Soybean</span><span class="bc-pct" style="color:var(--gold)">88%</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:88%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-01 · Punjab Wheat</span><span class="bc-pct" style="color:var(--gold)">82%</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:82%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-05 · Andhra Rice</span><span class="bc-pct" style="color:var(--gold)">74%</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:74%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-02 · UP Sugarcane</span><span class="bc-pct" style="color:var(--gold)">61%</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:61%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-03 · Vidarbha Cotton</span><span class="bc-pct" style="color:var(--danger)">11% ⚠</span></div><div class="bc-bar"><div class="bc-fill bat-r" style="width:11%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">CW-07 · Rajasthan</span><span class="bc-pct" style="color:var(--muted)">Charging</span></div><div class="bc-bar"><div class="bc-fill" style="width:6%;background:var(--muted2)"></div></div></div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Area Scanned by State</div>
+<div class="card-sub">Total km² coverage this month</div>
+<div class="bat-chart" style="margin-top:12px;">
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Madhya Pradesh</span><span class="bc-pct" style="color:var(--gold2);font-family:var(--font-display)">418 km²</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:100%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Punjab</span><span class="bc-pct" style="color:var(--gold2);font-family:var(--font-display)">287 km²</span></div><div class="bc-bar"><div class="bc-fill bat-g" style="width:69%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Andhra Pradesh</span><span class="bc-pct" style="color:var(--gold2);font-family:var(--font-display)">224 km²</span></div><div class="bc-bar"><div class="bc-fill" style="width:54%;background:var(--gold2)"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Haryana</span><span class="bc-pct" style="color:var(--gold2);font-family:var(--font-display)">218 km²</span></div><div class="bc-bar"><div class="bc-fill" style="width:52%;background:var(--gold2)"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Maharashtra</span><span class="bc-pct" style="color:var(--warn);font-family:var(--font-display)">198 km²</span></div><div class="bc-bar"><div class="bc-fill bat-y" style="width:47%"></div></div></div>
+<div class="bc-row"><div class="bc-info"><span class="bc-drone">Rajasthan</span><span class="bc-pct" style="color:var(--danger);font-family:var(--font-display)">142 km²</span></div><div class="bc-bar"><div class="bc-fill bat-r" style="width:34%"></div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ══════════ BACKEND ══════════ -->
+<div class="panel" id="panel-backend">
+<div class="sec-hdr"><h2>🧠 Backend Logic</h2><p>The invisible engine that powers CropWatch — explained visually</p></div>
+<div class="be-grid">
+<div class="be-card">
+<div class="be-title">🗄️ Database — PostgreSQL + PostGIS</div>
+<div class="be-desc">Stores all drone scan data, NDVI results, crop stress alerts, and field zone boundaries with geospatial precision. PostGIS enables spatial queries like "all critical zones within 20km of an irrigation canal."</div>
+<div class="be-step"><div class="be-num">1</div>Drone confirms upload → FastAPI saves S3 URL + metadata to PostgreSQL</div>
+<div class="be-step"><div class="be-num">2</div>PostGIS stores crop zone geometry as Polygon shapes with GPS boundaries</div>
+<div class="be-step"><div class="be-num">3</div>Spatial query: SELECT zones WHERE ndvi_score &lt; 0.4 AND ST_Within(zone, field)</div>
+<div class="be-step"><div class="be-num">4</div>Results served to frontend via FastAPI REST endpoint</div>
+</div>
+<div class="be-card">
+<div class="be-title">⚙️ Processing Engine — Celery + NumPy</div>
+<div class="be-desc">NDVI computation is CPU-heavy. Celery queues jobs via Redis so the API stays responsive. Workers run in parallel — one file per worker. Progress streams back via WebSocket.</div>
+<div class="be-step"><div class="be-num">1</div>Upload confirmed → Celery job enqueued via Redis broker</div>
+<div class="be-step"><div class="be-num">2</div>Worker loads GeoTIFF using Rasterio — reads NIR and Red spectral bands</div>
+<div class="be-step"><div class="be-num">3</div>NumPy computes: NDVI = (NIR − Red) / (NIR + Red) per pixel across field</div>
+<div class="be-step"><div class="be-num">4</div>Heatmap PNG saved to S3 → WebSocket pushes progress to dashboard</div>
+</div>
+<div class="be-card">
+<div class="be-title">🚨 Crop Stress Alert Engine — ML + Rules</div>
+<div class="be-desc">Compares current NDVI against a rolling 60-day crop baseline. A scikit-learn classifier identifies drought vs. pest vs. waterlogging patterns. Triggers SMS + email to field officers.</div>
+<div class="be-step"><div class="be-num">1</div>Fetch baseline NDVI for the same GPS zone from last 60 days</div>
+<div class="be-step"><div class="be-num">2</div>Calculate delta — if NDVI drop &gt; 0.2 within 7 days → flag CRITICAL</div>
+<div class="be-step"><div class="be-num">3</div>scikit-learn classifier checks spatial texture pattern (drought / pest / flood)</div>
+<div class="be-step"><div class="be-num">4</div>Alert written to DB → push via SendGrid + Twilio + WebSocket</div>
+</div>
+<div class="be-card">
+<div class="be-title">🔌 REST API — FastAPI</div>
+<div class="be-desc">Auto-documented REST API with Swagger UI at /docs. Frontend calls these endpoints. JWT authentication on every route. CORS configured for the React dev server.</div>
+<div class="api-row"><span class="method m-post">POST</span><span class="api-path">/uploads/presign</span><span class="api-note">Generate S3 URL</span></div>
+<div class="api-row"><span class="method m-post">POST</span><span class="api-path">/uploads/confirm</span><span class="api-note">Trigger NDVI job</span></div>
+<div class="api-row"><span class="method m-get">GET</span><span class="api-path">/drones</span><span class="api-note">Fleet telemetry</span></div>
+<div class="api-row"><span class="method m-get">GET</span><span class="api-path">/analysis/{id}</span><span class="api-note">NDVI results</span></div>
+<div class="api-row"><span class="method m-get">GET</span><span class="api-path">/regions/geojson</span><span class="api-note">Zone boundaries</span></div>
+<div class="api-row"><span class="method m-get">GET</span><span class="api-path">/alerts</span><span class="api-note">Active stress alerts</span></div>
+<div class="api-row"><span class="method m-get">GET</span><span class="api-path">/analytics/trends</span><span class="api-note">Time-series NDVI</span></div>
+<div class="api-row"><span class="method m-del">DEL</span><span class="api-path">/uploads/{id}</span><span class="api-note">Delete + S3 cleanup</span></div>
+</div>
+</div>
+<div class="flow-bar">
+<div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--gold2);margin-bottom:14px;">Complete Data Flow</div>
+<div class="flow-inner">
+<div class="flow-node">🚁 Drone</div><div class="flow-arrow">→</div>
+<div class="flow-node">📤 Upload</div><div class="flow-arrow">→</div>
+<div class="flow-node">📦 AWS S3</div><div class="flow-arrow">→</div>
+<div class="flow-node">⚡ FastAPI</div><div class="flow-arrow">→</div>
+<div class="flow-node">🔄 Celery + Redis</div><div class="flow-arrow">→</div>
+<div class="flow-node">🔬 NDVI Engine</div><div class="flow-arrow">→</div>
+<div class="flow-node">🗄️ PostgreSQL</div><div class="flow-arrow">→</div>
+<div class="flow-node highlight">📊 Dashboard + Alerts</div>
+</div>
+</div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ CROP IMAGERY PANEL ══ -->
+<div class="fp-overlay fp-hidden" id="fpOverlay">
+<div class="fp-card" id="fpCard">
+<div class="fp-hero">
+<img id="fpImg" class="fp-img" src="" alt="">
+<div class="fp-topbar">
+<div class="fp-brand">
+🛰️ &nbsp;CROPWATCH &nbsp;//&nbsp; NDVI DRONE IMAGERY
+<div class="fp-live"><span class="fp-live-dot"></span>LIVE</div>
+</div>
+<div class="fp-close" id="fpClose">✕</div>
+</div>
+<div class="fp-herofoot">
+<div>
+<div class="fp-forest-name" id="fpName">---</div>
+<div class="fp-state" id="fpState">---</div>
+</div>
+<div class="fp-badge" id="fpBadge">---</div>
+</div>
+</div>
+<div class="fp-body">
+<div class="fp-stats" id="fpStats"></div>
+<div class="fp-ndvi-row">
+<div class="fp-ndvi-header">
+<span class="fp-ndvi-title">NDVI Vegetation Index</span>
+<span class="fp-ndvi-score" id="fpNdviScore">---</span>
+</div>
+<div class="fp-ndvi-track">
+<div class="fp-ndvi-pin" id="fpNdviPin" style="left:50%"></div>
+</div>
+<div class="fp-ndvi-axis">
+<span>0.0 — Bare</span><span>0.25 — Sparse</span>
+<span>0.5 — Moderate</span><span>0.75 — Dense</span><span>1.0 — Lush</span>
+</div>
+</div>
+<div class="fp-lower">
+<div>
+<div class="fp-section-title">📡 Stress Alerts</div>
+<div class="fp-alerts" id="fpAlerts"></div>
+</div>
+<div>
+<div class="fp-section-title">🚁 Mission Details</div>
+<div class="fp-ring-wrap">
+<div class="fp-ring">
+<svg width="72" height="72" viewBox="0 0 72 72">
+<circle cx="36" cy="36" r="28" fill="none" stroke="var(--border2)" stroke-width="7"/>
+<circle cx="36" cy="36" r="28" fill="none" stroke="#f5a623" stroke-width="7" id="fpRingCircle" stroke-dasharray="176" stroke-dashoffset="88" stroke-linecap="round"/>
+</svg>
+<div class="fp-ring-val" id="fpRingVal">---</div>
+</div>
+<div class="fp-ring-info">
+<div class="fp-ri-title" id="fpRingTitle">Crop Health</div>
+<div class="fp-ri-sub" id="fpRingDesc">---</div>
+</div>
+</div>
+<div class="fp-mission" id="fpMission"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ══ ANALYSIS MODAL ══ -->
+<div class="analysis-overlay an-hidden" id="analysisOverlay">
+<div class="analysis-modal">
+<div class="an-header">
+<div>
+<div class="an-title" id="anTitle">Analyse Drone Scan</div>
+<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px;" id="anSubtitle">Step 1 of 3 — Select crop zone</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;">
+<div class="an-step-pills"><div class="an-pill active" id="anPill1"></div><div class="an-pill" id="anPill2"></div><div class="an-pill" id="anPill3"></div></div>
+<div onclick="closeAnalysis()" style="width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid var(--border2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</div>
+</div>
+</div>
+<div class="an-body">
+<div id="anStep1">
+<img id="anPreviewImg" class="an-preview" src="" alt="Uploaded scan">
+<label class="an-label">Assign to Crop Zone</label>
+<select class="an-select" id="anForestSelect">
+<option value="">— Select a crop zone —</option>
+<option value="punjab_wheat">Punjab Wheat Belt</option>
+<option value="haryana_paddy">Haryana Paddy Fields</option>
+<option value="up_sugarcane">UP Sugarcane Zone</option>
+<option value="mp_soybean">MP Soybean Belt</option>
+<option value="vidarbha_cotton">Vidarbha Cotton Zone</option>
+<option value="andhra_rice">Andhra Rice Delta</option>
+<option value="karnataka_ragi">Karnataka Ragi Zone</option>
+<option value="gujarat_groundnut">Gujarat Groundnut Belt</option>
+<option value="rajasthan_dry">Rajasthan Drylands</option>
+<option value="tamil_banana">Tamil Nadu Banana Plantations</option>
+<option value="kerala_spice">Kerala Spice Gardens</option>
+<option value="odisha_paddy">Odisha Paddy Plains</option>
+<option value="wb_jute">West Bengal Jute Fields</option>
+<option value="assam_tea">Assam Tea Gardens</option>
+<option value="telangana_cotton">Telangana Cotton Zone</option>
+<option value="chhattisgarh_rice">Chhattisgarh Rice Bowl</option>
+<option value="jharkhand_pulses">Jharkhand Pulse Fields</option>
+<option value="hp_apple">Himachal Apple Orchards</option>
+<option value="punjab_mustard">Punjab Mustard Fields</option>
+<option value="up_potato">UP Potato Belt</option>
+<option value="maharashtra_grape">Maharashtra Grape Vineyards</option>
+<option value="tn_sugarcane">Tamil Nadu Sugarcane</option>
+<option value="mp_wheat">MP Wheat Zone</option>
+<option value="bihar_maize">Bihar Maize Fields</option>
+<option value="karnataka_coffee">Karnataka Coffee Estates</option>
+</select>
+<label class="an-label">Drone ID</label>
+<select class="an-select" id="anDroneSelect">
+<option value="CW-01">CW-01 · DJI Matrice 300 RTK</option>
+<option value="CW-02">CW-02 · DJI Mavic 3 Multispectral</option>
+<option value="CW-03">CW-03 · DJI Matrice 300 LiDAR</option>
+<option value="CW-04">CW-04 · DJI Matrice 350 RTK</option>
+<option value="CW-05">CW-05 · Parrot Anafi Thermal</option>
+<option value="CW-06">CW-06 · senseFly eBee X</option>
+<option value="CW-07">CW-07 · DJI Matrice 300 RGB+MS</option>
+<option value="CW-08">CW-08 · DJI Phantom 4 MS</option>
+<option value="CW-09">CW-09 · WingtraOne GEN II</option>
+<option value="CW-10">CW-10 · Parrot Disco-Pro AG</option>
+</select>
+<div class="an-actions">
+<button class="an-btn-secondary" onclick="closeAnalysis()">Cancel</button>
+<button class="an-btn-primary" onclick="startAnalysis()">ANALYSE SCAN →</button>
+</div>
+</div>
+<div id="anStep2" style="display:none;">
+<img id="anPreviewImg2" class="an-preview" src="" alt="">
+<div class="an-scan-wrap">
+<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:8px;"><span>AI Analysis Progress</span><span id="anScanPct">0%</span></div>
+<div class="an-scan-bar-track"><div class="an-scan-bar-fill" id="anScanBar"></div></div>
+<div class="an-scan-steps" id="anScanSteps">
+<div class="an-scan-step" id="ss0"><span class="ss-ico">⏳</span>Loading spectral bands & extracting metadata</div>
+<div class="an-scan-step" id="ss1"><span class="ss-ico">⏳</span>Running NDVI calculation (NIR − Red) / (NIR + Red)</div>
+<div class="an-scan-step" id="ss2"><span class="ss-ico">⏳</span>Detecting crop stress zones via ML classifier</div>
+<div class="an-scan-step" id="ss3"><span class="ss-ico">⏳</span>Comparing against 60-day baseline NDVI</div>
+<div class="an-scan-step" id="ss4"><span class="ss-ico">⏳</span>Generating stress flags & risk score</div>
+<div class="an-scan-step" id="ss5"><span class="ss-ico">⏳</span>Saving results to crop zone database</div>
+</div>
+</div>
+</div>
+<div id="anStep3" style="display:none;">
+<div class="an-results" id="anResultsGrid"></div>
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;" id="anInsightBox"></div>
+<div class="an-actions">
+<button class="an-btn-secondary" onclick="closeAnalysis()">Close</button>
+<button class="an-btn-primary" onclick="saveToForest()">SAVE TO CROP ZONE →</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+// ─────────────────────────── LOGIN ───────────────────────────
+function doLogin(){
+document.getElementById('loginPage').style.display='none';
+document.getElementById('app').style.display='block';
+startClock(); initMap(); animProgress();
+}
+function doLogout(){
+document.getElementById('app').style.display='none';
+document.getElementById('loginPage').style.display='flex';
+}
+document.addEventListener('keydown',e=>{
+if(e.key==='Enter' && document.getElementById('loginPage').style.display!=='none') doLogin();
+});
+
+// ─────────────────────────── NAVIGATION ───────────────────────────
+const titles={
+dashboard:'Dashboard',drones:'Drone Fleet',map:'Crop Map · India',
+upload:'Upload Scan',logs:'Scan Logs',charts:'Analytics',backend:'Backend Logic'
+};
+function nav(name,el){
+document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+document.getElementById('panel-'+name).classList.add('active');
+if(el) el.classList.add('active');
+document.getElementById('pageTitle').textContent = titles[name]||name;
+if(name==='map') setTimeout(()=>{ if(window._map) window._map.invalidateSize(); },200);
+window.scrollTo(0,0);
+}
+
+// ─────────────────────────── CLOCK ───────────────────────────
+function startClock(){
+const el=document.getElementById('clock');
+setInterval(()=>{
+const ist=new Date(Date.now()+(5.5*3600000));
+const pad=n=>String(n).padStart(2,'0');
+el.textContent=`${pad(ist.getUTCHours())}:${pad(ist.getUTCMinutes())}:${pad(ist.getUTCSeconds())}`;
+},1000);
+}
+
+// ─────────────────────────── CROP ZONES DATA ───────────────────────────
+window.cropZones = [
+{ name:"Punjab Wheat Belt", key:"punjab_wheat", state:"Punjab", lat:30.90, lon:75.85, ndvi:0.28, risk:"CRITICAL", color:"#ef4444", drone:"CW-01", area:"12,000 km²", crop:"Wheat" },
+{ name:"Haryana Paddy Fields", key:"haryana_paddy", state:"Haryana", lat:29.05, lon:76.08, ndvi:0.72, risk:"Healthy", color:"#22c55e", drone:"CW-01", area:"8,500 km²", crop:"Paddy" },
+{ name:"UP Sugarcane Zone", key:"up_sugarcane", state:"Uttar Pradesh", lat:26.85, lon:80.95, ndvi:0.51, risk:"Moderate", color:"#f5a623", drone:"CW-02", area:"22,000 km²", crop:"Sugarcane" },
+{ name:"MP Soybean Belt", key:"mp_soybean", state:"Madhya Pradesh", lat:23.25, lon:77.40, ndvi:0.79, risk:"Healthy", color:"#22c55e", drone:"CW-09", area:"15,000 km²", crop:"Soybean" },
+{ name:"Vidarbha Cotton Zone", key:"vidarbha_cotton", state:"Maharashtra", lat:20.70, lon:78.60, ndvi:0.33, risk:"CRITICAL", color:"#ef4444", drone:"CW-07", area:"11,000 km²", crop:"Cotton" },
+{ name:"Andhra Rice Delta", key:"andhra_rice", state:"Andhra Pradesh", lat:16.30, lon:81.00, ndvi:0.76, risk:"Healthy", color:"#22c55e", drone:"CW-05", area:"9,800 km²", crop:"Rice" },
+{ name:"Karnataka Ragi Zone", key:"karnataka_ragi", state:"Karnataka", lat:13.50, lon:76.90, ndvi:0.57, risk:"Moderate", color:"#f5a623", drone:"CW-05", area:"6,200 km²", crop:"Ragi" },
+{ name:"Gujarat Groundnut Belt", key:"gujarat_groundnut", state:"Gujarat", lat:22.30, lon:70.80, ndvi:0.48, risk:"Moderate", color:"#f5a623", drone:"CW-03", area:"7,500 km²", crop:"Groundnut" },
+{ name:"Rajasthan Drylands", key:"rajasthan_dry", state:"Rajasthan", lat:26.50, lon:73.00, ndvi:0.29, risk:"CRITICAL", color:"#ef4444", drone:"CW-07", area:"18,000 km²", crop:"Millet/Pulses" },
+{ name:"Tamil Nadu Banana", key:"tamil_banana", state:"Tamil Nadu", lat:10.90, lon:78.10, ndvi:0.83, risk:"Healthy", color:"#22c55e", drone:"CW-02", area:"4,100 km²", crop:"Banana" },
+{ name:"Kerala Spice Gardens", key:"kerala_spice", state:"Kerala", lat:10.52, lon:76.21, ndvi:0.81, risk:"Healthy", color:"#22c55e", drone:"CW-05", area:"3,200 km²", crop:"Spices" },
+{ name:"Odisha Paddy Plains", key:"odisha_paddy", state:"Odisha", lat:20.40, lon:85.80, ndvi:0.68, risk:"Healthy", color:"#22c55e", drone:"CW-04", area:"10,500 km²", crop:"Paddy" },
+{ name:"West Bengal Jute Fields", key:"wb_jute", state:"West Bengal", lat:22.80, lon:88.30, ndvi:0.44, risk:"Moderate", color:"#f5a623", drone:"CW-08", area:"5,800 km²", crop:"Jute" },
+{ name:"Assam Tea Gardens", key:"assam_tea", state:"Assam", lat:26.50, lon:93.60, ndvi:0.77, risk:"Healthy", color:"#22c55e", drone:"CW-08", area:"2,900 km²", crop:"Tea" },
+{ name:"Telangana Cotton Zone", key:"telangana_cotton", state:"Telangana", lat:17.80, lon:79.10, ndvi:0.52, risk:"Moderate", color:"#f5a623", drone:"CW-06", area:"8,700 km²", crop:"Cotton" },
+{ name:"Chhattisgarh Rice Bowl", key:"chhattisgarh_rice", state:"Chhattisgarh", lat:21.30, lon:81.60, ndvi:0.70, risk:"Healthy", color:"#22c55e", drone:"CW-06", area:"6,400 km²", crop:"Rice" },
+{ name:"Jharkhand Pulse Fields", key:"jharkhand_pulses", state:"Jharkhand", lat:23.60, lon:85.30, ndvi:0.42, risk:"Moderate", color:"#f5a623", drone:"CW-04", area:"4,200 km²", crop:"Pulses" },
+{ name:"Himachal Apple Orchards", key:"hp_apple", state:"Himachal Pradesh", lat:31.50, lon:77.20, ndvi:0.74, risk:"Healthy", color:"#22c55e", drone:"CW-03", area:"2,100 km²", crop:"Apple" },
+{ name:"Punjab Mustard Fields", key:"punjab_mustard", state:"Punjab", lat:31.10, lon:74.70, ndvi:0.63, risk:"Healthy", color:"#22c55e", drone:"CW-01", area:"3,800 km²", crop:"Mustard" },
+{ name:"UP Potato Belt", key:"up_potato", state:"Uttar Pradesh", lat:27.20, lon:79.50, ndvi:0.55, risk:"Moderate", color:"#f5a623", drone:"CW-02", area:"5,100 km²", crop:"Potato" },
+{ name:"Maharashtra Grape Vineyards", key:"maharashtra_grape", state:"Maharashtra", lat:20.10, lon:74.60, ndvi:0.66, risk:"Healthy", color:"#22c55e", drone:"CW-03", area:"1,900 km²", crop:"Grapes" },
+{ name:"Tamil Nadu Sugarcane", key:"tn_sugarcane", state:"Tamil Nadu", lat:11.30, lon:77.80, ndvi:0.71, risk:"Healthy", color:"#22c55e", drone:"CW-05", area:"3,600 km²", crop:"Sugarcane" },
+{ name:"MP Wheat Zone", key:"mp_wheat", state:"Madhya Pradesh", lat:24.50, lon:78.10, ndvi:0.38, risk:"CRITICAL", color:"#ef4444", drone:"CW-09", area:"9,200 km²", crop:"Wheat" },
+{ name:"Bihar Maize Fields", key:"bihar_maize", state:"Bihar", lat:25.60, lon:85.80, ndvi:0.60, risk:"Healthy", color:"#22c55e", drone:"CW-04", area:"4,700 km²", crop:"Maize" },
+{ name:"Karnataka Coffee Estates", key:"karnataka_coffee", state:"Karnataka", lat:12.90, lon:75.70, ndvi:0.82, risk:"Healthy", color:"#22c55e", drone:"CW-06", area:"2,400 km²", crop:"Coffee" },
+];
+
+window.CROP_PANEL = {
+punjab_wheat: { ndvi:0.28, risk:"CRITICAL", drone:"CW-01", area:"287 km²", alt:"80 m AGL", dur:"5h 20m", missions:98, alerts:[
+{t:"crit",ico:"🔴",txt:"Severe drought — NDVI at 3-year record low for kharif season",time:"3h ago"},
+{t:"crit",ico:"🔴",txt:"42.6 km² showing irreversible crop damage",time:"5h ago"},
+{t:"warn",ico:"⚠️",txt:"Irrigation deficit detected in western zone",time:"1d ago"},
+]},
+haryana_paddy: { ndvi:0.72, risk:"HEALTHY", drone:"CW-01", area:"218 km²", alt:"80 m AGL", dur:"4h 30m", missions:134, alerts:[
+{t:"ok",ico:"✅",txt:"Paddy crop health excellent — above seasonal average",time:"2h ago"},
+{t:"ok",ico:"✅",txt:"No waterlogging detected in all monitored fields",time:"6h ago"},
+{t:"warn",ico:"⚠️",txt:"Minor pest scouting recommended in northern block",time:"2d ago"},
+]},
+up_sugarcane: { ndvi:0.51, risk:"MODERATE", drone:"CW-02", area:"112 km²", alt:"70 m AGL", dur:"3h 15m", missions:76, alerts:[
+{t:"warn",ico:"⚠️",txt:"Waterlogging risk in eastern sugarcane plots",time:"8h ago"},
+{t:"warn",ico:"⚠️",txt:"NDVI dropped 0.09 vs last week — monitor closely",time:"1d ago"},
+{t:"ok",ico:"✅",txt:"Western zone sugarcane healthy and on track",time:"2d ago"},
+]},
+mp_soybean: { ndvi:0.79, risk:"HEALTHY", drone:"CW-09", area:"418 km²", alt:"250 m AGL", dur:"6h 02m", missions:112, alerts:[
+{t:"ok",ico:"✅",txt:"Highest NDVI in this scan cycle — excellent crop health",time:"2h ago"},
+{t:"ok",ico:"✅",txt:"Soybean pod development progressing well",time:"5h ago"},
+{t:"ok",ico:"✅",txt:"No pest infestation detected across monitored zones",time:"8h ago"},
+]},
+vidarbha_cotton: { ndvi:0.33, risk:"CRITICAL", drone:"CW-07", area:"198 km²", alt:"100 m AGL", dur:"4h 10m", missions:89, alerts:[
+{t:"crit",ico:"🔴",txt:"Pink bollworm infestation confirmed — 18.3 km² affected",time:"6h ago"},
+{t:"crit",ico:"🔴",txt:"Thermal anomaly suggests active pest activity in Zone 4",time:"8h ago"},
+{t:"warn",ico:"⚠️",txt:"Soil moisture critically low — irrigation required immediately",time:"1d ago"},
+]},
+andhra_rice: { ndvi:0.76, risk:"HEALTHY", drone:"CW-05", area:"224 km²", alt:"90 m AGL", dur:"3h 48m", missions:142, alerts:[
+{t:"ok",ico:"✅",txt:"Rice tillering stage progressing excellently",time:"1h ago"},
+{t:"ok",ico:"✅",txt:"Water table levels optimal for paddy cultivation",time:"4h ago"},
+{t:"warn",ico:"⚠️",txt:"Minor brown planthopper spotted — scout and monitor",time:"3d ago"},
+]},
+karnataka_ragi: { ndvi:0.57, risk:"MODERATE", drone:"CW-05", area:"188 km²", alt:"90 m AGL", dur:"3h 55m", missions:67, alerts:[
+{t:"warn",ico:"⚠️",txt:"Mild drought stress — below seasonal NDVI average",time:"12h ago"},
+{t:"warn",ico:"⚠️",txt:"Inter-cropping with legumes recommended for soil health",time:"2d ago"},
+{t:"ok",ico:"✅",txt:"Core zone ragi holding stable growth pattern",time:"3d ago"},
+]},
+gujarat_groundnut: { ndvi:0.48, risk:"MODERATE", drone:"CW-03", area:"142 km²", alt:"100 m AGL", dur:"2h 40m", missions:54, alerts:[
+{t:"warn",ico:"⚠️",txt:"Dry spell reducing pod development rates",time:"1d ago"},
+{t:"warn",ico:"⚠️",txt:"NDVI declining — 2nd consecutive scan week",time:"3d ago"},
+{t:"ok",ico:"✅",txt:"Northern groundnut plots showing recovery after rain",time:"4d ago"},
+]},
+rajasthan_dry: { ndvi:0.29, risk:"CRITICAL", drone:"CW-07", area:"142 km²", alt:"100 m AGL", dur:"2h 40m", missions:42, alerts:[
+{t:"crit",ico:"🔴",txt:"Severe water deficit — millet crop at risk of failure",time:"3h ago"},
+{t:"crit",ico:"🔴",txt:"Soil erosion detected in 12 km² of exposed fields",time:"6h ago"},
+{t:"warn",ico:"⚠️",txt:"Mission aborted — dust storm + low visibility",time:"2d ago"},
+]},
+tamil_banana: { ndvi:0.83, risk:"HEALTHY", drone:"CW-02", area:"96 km²", alt:"70 m AGL", dur:"2h 50m", missions:88, alerts:[
+{t:"ok",ico:"✅",txt:"Banana bunches developing well — harvest estimate on track",time:"2h ago"},
+{t:"ok",ico:"✅",txt:"Canopy NDVI excellent — top yield expected this season",time:"5h ago"},
+{t:"warn",ico:"⚠️",txt:"Slight pseudostem weevil risk detected — pheromone traps advised",time:"4d ago"},
+]},
+};
+
+let mapReady = false;
+
+function initMap(){
+if(mapReady) return; mapReady=true;
+const zones = window.cropZones;
+const map = L.map('leaflet-map',{center:[22,80],zoom:5,zoomControl:true,scrollWheelZoom:true});
+window._map = map;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+maxZoom:18
+}).addTo(map);
+
+const fl = document.getElementById('forestList');
+zones.forEach(f=>{
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+<circle cx="16" cy="16" r="14" fill="${f.color}" fill-opacity=".25" stroke="${f.color}" stroke-width="2"/>
+<circle cx="16" cy="16" r="7" fill="${f.color}"/>
+<line x1="16" y1="30" x2="16" y2="40" stroke="${f.color}" stroke-width="2"/>
+</svg>`;
+const icon = L.divIcon({html:svg,iconSize:[32,40],iconAnchor:[16,40],popupAnchor:[0,-40],className:''});
+const ndviClass = f.ndvi>=0.6?'#22c55e':f.ndvi>=0.4?'#f5a623':'#ef4444';
+const popupHtml = `
+<div class="popup-name">${f.name}</div>
+<div class="popup-row">State <span>${f.state}</span></div>
+<div class="popup-row">Crop <span>${f.crop}</span></div>
+<div class="popup-row">NDVI Score <span style="color:${ndviClass}">${f.ndvi}</span></div>
+<div class="popup-row">Status <span style="color:${f.color}">${f.risk}</span></div>
+<div class="popup-row">Active Drone <span>${f.drone}</span></div>
+`;
+const marker = L.marker([f.lat,f.lon],{icon}).addTo(map);
+marker.bindPopup(popupHtml,{maxWidth:260});
+marker.on('click',()=>openMapInfoPanel(f.key));
+const ndviCls = f.ndvi>=0.6?'hi':f.ndvi>=0.4?'mid':'lo';
+const item = document.createElement('div');
+item.className='f-item';
+item.innerHTML=`<div><div class="f-name">${f.name}</div><div class="f-state">${f.state} · ${f.crop}</div></div><div class="f-ndvi ${ndviCls}">${f.ndvi}</div>`;
+item.onclick=()=>{ map.setView([f.lat,f.lon],9,{animate:true}); marker.openPopup(); openMapInfoPanel(f.key); };
+fl.appendChild(item);
+});
+zones.forEach(f=>{
+L.circle([f.lat,f.lon],{radius:55000,color:f.color,fillColor:f.color,fillOpacity:0.07,weight:1,opacity:0.35}).addTo(map);
+});
+map.on('click',()=>{ if(_mapPanelOpen) closeInlinePanel(); });
+}
+
+// ─────────────────────────── TABLE FILTER ───────────────────────────
+function filterTable(input){
+const q=input.value.toLowerCase();
+document.querySelectorAll('#logBody tr').forEach(row=>{
+row.style.display = row.textContent.toLowerCase().includes(q)?'':'none';
+});
+}
+
+// ─────────────────────────── PROGRESS BARS ───────────────────────────
+function animProgress(){
+let p2=62,p3=18;
+setInterval(()=>{
+if(p2<100){p2=Math.min(100,p2+0.22);const b=document.getElementById('qp2');if(b)b.style.width=p2+'%';if(p2>=100){const s=document.getElementById('qs2');if(s){s.textContent='✓ Complete';s.style.color='var(--green)';}}}
+if(p2>70&&p3<100){p3=Math.min(100,p3+0.16);const b=document.getElementById('qp3');if(b)b.style.width=p3+'%';}
+},250);
+}
+
+// ─────────────────────────── UPLOAD SYSTEM ───────────────────────────
+let userUploads=[];
+function formatBytes(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(1)+' MB';}
+function fileIcon(n){const e=n.split('.').pop().toLowerCase();return{png:'🖼️',jpg:'🖼️',jpeg:'🖼️',tif:'🛰️',tiff:'🛰️',las:'📡',csv:'📊',jp2:'🛰️'}[e]||'📄';}
+
+function handleFileSelect(files){
+if(!files||!files.length)return;
+Array.from(files).forEach(f=>addFileToQueue(f));
+const inp=document.getElementById('realFileInput');
+if(inp)inp.value='';
+}
+function addFileToQueue(file){
+const id='uf_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+const isImage=file.type.startsWith('image/');
+const entry={id,file,name:file.name,size:file.size,isImage,progress:0,status:'queued',previewUrl:null};
+userUploads.push(entry);
+updateQueueCount();
+renderUserUpload(entry);
+if(isImage){const r=new FileReader();r.onload=e=>{entry.previewUrl=e.target.result;const img=document.getElementById('prev_'+id);if(img){img.src=e.target.result;img.style.display='block';const ph=img.nextElementSibling;if(ph)ph.style.display='none';}};r.readAsDataURL(file);}
+simulateProgress(entry);
+}
+function renderUserUpload(entry){
+const container=document.getElementById('userUploadsContainer');
+if(!container)return;
+const div=document.createElement('div');
+div.className='q-item';div.id='qitem_'+entry.id;
+div.innerHTML=`
+<img id="prev_${entry.id}" class="q-preview" src="" alt="" style="display:${entry.isImage?'block':'none'}">
+<div class="q-preview-placeholder" style="display:${entry.isImage?'none':'flex'}">${fileIcon(entry.name)}</div>
+<div style="flex:1;min-width:0;">
+<div class="q-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${entry.name}">${entry.name}</div>
+<div class="q-meta">${formatBytes(entry.size)} · Just now</div>
+</div>
+<div class="q-prog-wrap">
+<div class="q-prog-bar"><div class="q-prog-fill" id="prog_${entry.id}" style="width:0%"></div></div>
+<div class="q-status" id="stat_${entry.id}" style="color:var(--muted)">Queued</div>
+</div>
+<button id="analyse_${entry.id}" onclick="openAnalysis('${entry.id}')" style="display:none;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);border-radius:7px;padding:5px 12px;color:var(--gold);font-family:var(--font-mono);font-size:10px;cursor:pointer;flex-shrink:0;">🔬 Analyse</button>
+<button class="q-remove" onclick="removeUpload('${entry.id}')" title="Remove">✕</button>`;
+container.appendChild(div);
+}
+function simulateProgress(entry){
+let pct=0;
+setTimeout(()=>{
+const st=document.getElementById('stat_'+entry.id);
+if(st){st.textContent='Uploading...';st.style.color='var(--info)';}
+const iv=setInterval(()=>{
+pct+=Math.random()*12+4;
+if(pct>=100){pct=100;clearInterval(iv);onUploadComplete(entry);}
+const p=document.getElementById('prog_'+entry.id);
+if(p)p.style.width=pct+'%';
+},180);
+},300+Math.random()*600);
+}
+function onUploadComplete(entry){
+entry.status='complete';
+const st=document.getElementById('stat_'+entry.id);
+if(st){st.textContent='✓ Complete';st.style.color='var(--green)';}
+const btn=document.getElementById('analyse_'+entry.id);
+if(btn)btn.style.display='block';
+showUploadToast(entry.name,entry.size);
+}
+function removeUpload(id){
+userUploads=userUploads.filter(u=>u.id!==id);
+const el=document.getElementById('qitem_'+id);
+if(el){el.style.opacity='0';el.style.transform='translateX(20px)';el.style.transition='all .25s';setTimeout(()=>el.remove(),250);}
+updateQueueCount();
+}
+function clearUserUploads(){
+userUploads=[];
+const c=document.getElementById('userUploadsContainer');
+if(c)c.innerHTML='';
+updateQueueCount();
+}
+function updateQueueCount(){
+const el=document.getElementById('queueCount');
+if(!el)return;
+const total=3+userUploads.length;
+const done=userUploads.filter(u=>u.status==='complete').length;
+el.textContent=`${total} files · ${done} new complete`;
+}
+function showUploadToast(name,size){
+const t=document.createElement('div');
+t.className='upload-success-flash';
+t.innerHTML=`<span style="font-size:20px">✅</span><div><div style="font-weight:600;color:var(--text)">${name.length>32?name.slice(0,32)+'...':name}</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${formatBytes(size)} · Upload complete</div></div>`;
+document.body.appendChild(t);
+setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3500);
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+const zone=document.getElementById('uploadDropZone');
+if(!zone)return;
+zone.addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')document.getElementById('realFileInput').click();});
+zone.addEventListener('dragenter',e=>{e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragleave',e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove('drag-over');});
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFileSelect(e.dataTransfer.files);});
+const ao=document.getElementById('analysisOverlay');
+if(ao)ao.addEventListener('click',e=>{if(e.target===ao)closeAnalysis();});
+const fpClose=document.getElementById('fpClose');
+const fpOverlay=document.getElementById('fpOverlay');
+if(fpClose)fpClose.addEventListener('click',closeForestPanel);
+if(fpOverlay)fpOverlay.addEventListener('click',e=>{if(e.target===fpOverlay)closeForestPanel();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAnalysis();closeForestPanel();closeInlinePanel();}});
+
+// ─────────────────────────── ANALYSIS ENGINE ───────────────────────────
+const forestScansDB={};
+let _currentAnalysis=null;
+const CROP_NAMES={
+punjab_wheat:'Punjab Wheat Belt',haryana_paddy:'Haryana Paddy Fields',
+up_sugarcane:'UP Sugarcane Zone',mp_soybean:'MP Soybean Belt',
+vidarbha_cotton:'Vidarbha Cotton Zone',andhra_rice:'Andhra Rice Delta',
+karnataka_ragi:'Karnataka Ragi Zone',gujarat_groundnut:'Gujarat Groundnut Belt',
+rajasthan_dry:'Rajasthan Drylands',tamil_banana:'Tamil Nadu Banana',
+kerala_spice:'Kerala Spice Gardens',odisha_paddy:'Odisha Paddy Plains',
+wb_jute:'West Bengal Jute Fields',assam_tea:'Assam Tea Gardens',
+telangana_cotton:'Telangana Cotton Zone',chhattisgarh_rice:'Chhattisgarh Rice Bowl',
+jharkhand_pulses:'Jharkhand Pulse Fields',hp_apple:'Himachal Apple Orchards',
+punjab_mustard:'Punjab Mustard Fields',up_potato:'UP Potato Belt',
+maharashtra_grape:'Maharashtra Grape Vineyards',tn_sugarcane:'Tamil Nadu Sugarcane',
+mp_wheat:'MP Wheat Zone',bihar_maize:'Bihar Maize Fields',
+karnataka_coffee:'Karnataka Coffee Estates'
+};
+
+function openAnalysis(entryId){
+const entry=userUploads.find(u=>u.id===entryId);
+if(!entry)return;
+_currentAnalysis={entryId,forestKey:null,droneId:'CW-01',results:null};
+const src=entry.previewUrl||'';
+document.getElementById('anPreviewImg').src=src;
+document.getElementById('anPreviewImg2').src=src;
+setAnStep(1);
+document.getElementById('analysisOverlay').classList.remove('an-hidden');
+document.body.style.overflow='hidden';
+}
+function closeAnalysis(){
+const ov=document.getElementById('analysisOverlay');
+if(ov)ov.classList.add('an-hidden');
+document.body.style.overflow='';
+_currentAnalysis=null;
+}
+function setAnStep(step){
+[1,2,3].forEach(s=>{const el=document.getElementById('anStep'+s);if(el)el.style.display=s===step?'block':'none';});
+const subs={1:'Step 1 of 3 — Assign to crop zone',2:'Step 2 of 3 — AI analysis running',3:'Step 3 of 3 — Results ready'};
+const sub=document.getElementById('anSubtitle');if(sub)sub.textContent=subs[step]||'';
+[1,2,3].forEach(p=>{const pill=document.getElementById('anPill'+p);if(!pill)return;pill.classList.remove('done','active');if(p<step)pill.classList.add('done');if(p===step)pill.classList.add('active');});
+}
+function startAnalysis(){
+const fk=document.getElementById('anForestSelect').value;
+const dk=document.getElementById('anDroneSelect').value;
+if(!fk){document.getElementById('anForestSelect').style.borderColor='var(--danger)';return;}
+document.getElementById('anForestSelect').style.borderColor='';
+_currentAnalysis.forestKey=fk;_currentAnalysis.droneId=dk;
+setAnStep(2);runScanAnimation();
+}
+const SCAN_STEPS_DEF=[{id:'ss0',dur:600},{id:'ss1',dur:900},{id:'ss2',dur:1100},{id:'ss3',dur:800},{id:'ss4',dur:600},{id:'ss5',dur:500}];
+function runScanAnimation(){
+document.getElementById('anScanBar').style.width='0%';
+document.getElementById('anScanPct').textContent='0%';
+SCAN_STEPS_DEF.forEach(s=>{const el=document.getElementById(s.id);if(el){el.classList.remove('done','active');el.querySelector('.ss-ico').textContent='⏳';}});
+let total=SCAN_STEPS_DEF.reduce((a,s)=>a+s.dur,0),elapsed=0,idx=0;
+function next(){
+if(idx>=SCAN_STEPS_DEF.length){setTimeout(()=>{_currentAnalysis.results=computeAnalysis(_currentAnalysis.forestKey);showResults(_currentAnalysis.results,_currentAnalysis.forestKey);setAnStep(3);},300);return;}
+const s=SCAN_STEPS_DEF[idx],el=document.getElementById(s.id);
+if(el){el.classList.add('active');el.querySelector('.ss-ico').textContent='⚙️';}
+const sp=Math.round(elapsed/total*100),ep=Math.round((elapsed+s.dur)/total*100);
+let cur=sp;
+const iv=setInterval(()=>{cur=Math.min(cur+2,ep);document.getElementById('anScanBar').style.width=cur+'%';document.getElementById('anScanPct').textContent=cur+'%';if(cur>=ep)clearInterval(iv);},s.dur/((ep-sp)||1));
+setTimeout(()=>{if(el){el.classList.remove('active');el.classList.add('done');el.querySelector('.ss-ico').textContent='✅';}elapsed+=s.dur;idx++;next();},s.dur);
+}
+next();
+}
+function computeAnalysis(forestKey){
+const base=(CROP_PANEL[forestKey]||{}).ndvi||(Math.random()*.4+.3);
+const ndvi=parseFloat(Math.max(.05,Math.min(.98,base+(Math.random()*.12-.06))).toFixed(2));
+const risk=ndvi>=.60?'HEALTHY':ndvi>=.40?'MODERATE':'CRITICAL';
+const rc=risk==='HEALTHY'?'#22c55e':risk==='MODERATE'?'#f5a623':'#ef4444';
+const area=Math.round(Math.random()*250+80);
+const stress=ndvi<.4?Math.round((1-ndvi)*18):ndvi<.6?Math.round((1-ndvi)*7):Math.round(Math.random()*2);
+const change=parseFloat((ndvi-base).toFixed(2));
+return{ndvi,risk,riskCol:rc,area,stress,change,changeStr:(change>=0?'+':'')+change,base,timestamp:new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false}).replace(',','')};
+}
+function showResults(r,forestKey){
+document.getElementById('anTitle').textContent='Analysis Complete';
+document.getElementById('anResultsGrid').innerHTML=`
+<div class="an-result-card"><div class="an-rc-label">NDVI Score</div><div class="an-rc-val" style="color:${r.riskCol}">${r.ndvi.toFixed(2)}</div><div class="an-rc-sub">vs baseline ${r.base.toFixed(2)} (${r.changeStr})</div></div>
+<div class="an-result-card"><div class="an-rc-label">Risk Level</div><div class="an-rc-val" style="color:${r.riskCol};font-size:14px;">${r.risk}</div><div class="an-rc-sub">AI classification</div></div>
+<div class="an-result-card"><div class="an-rc-label">Area Scanned</div><div class="an-rc-val">${r.area} km²</div><div class="an-rc-sub">Mission coverage</div></div>
+<div class="an-result-card"><div class="an-rc-label">Stressed Area</div><div class="an-rc-val" style="color:${r.stress>5?'var(--danger)':'var(--warn)'}">${r.stress} km²</div><div class="an-rc-sub">Crop stress patches</div></div>
+<div class="an-result-card"><div class="an-rc-label">NDVI Change</div><div class="an-rc-val" style="color:${r.change>=0?'var(--green2)':'var(--danger)'}">${r.changeStr}</div><div class="an-rc-sub">vs previous scan</div></div>
+<div class="an-result-card"><div class="an-rc-label">Alerts</div><div class="an-rc-val" style="color:${r.risk==='CRITICAL'?'var(--danger)':r.risk==='MODERATE'?'var(--gold)':'var(--green2)'}">${r.risk==='CRITICAL'?3:r.risk==='MODERATE'?1:0}</div><div class="an-rc-sub">Generated</div></div>`;
+const fname=CROP_NAMES[forestKey]||forestKey;
+const insight=r.risk==='CRITICAL'?`⚠️ <strong>Critical stress</strong> — NDVI ${r.ndvi.toFixed(2)} far below healthy threshold. Immediate field intervention needed for ${fname}.`:r.risk==='MODERATE'?`⚠️ <strong>Moderate stress</strong> — NDVI ${r.ndvi.toFixed(2)} in ${fname}. Monitor over next 2 weeks and consider irrigation.`:`✅ <strong>Healthy</strong> — NDVI ${r.ndvi.toFixed(2)} well above stress threshold. ${fname} shows strong crop health.`;
+document.getElementById('anInsightBox').innerHTML=`<div style="font-family:var(--font-body);font-size:12px;color:var(--text2);line-height:1.7;">${insight}</div>`;
+}
+function saveToForest(){
+if(!_currentAnalysis||!_currentAnalysis.results)return;
+const{forestKey,droneId,results,entryId}=_currentAnalysis;
+const entry=userUploads.find(u=>u.id===entryId);
+if(!forestScansDB[forestKey])forestScansDB[forestKey]=[];
+const scan={id:'SCN-'+Date.now(),droneId,forestKey,fileName:entry?entry.name:'scan',previewUrl:entry?entry.previewUrl:null,...results,savedAt:new Date()};
+forestScansDB[forestKey].unshift(scan);
+if(CROP_PANEL[forestKey]){
+CROP_PANEL[forestKey].ndvi=results.ndvi;
+CROP_PANEL[forestKey].risk=results.risk;
+CROP_PANEL[forestKey].drone=droneId;
+CROP_PANEL[forestKey].area=results.area+' km²';
+CROP_PANEL[forestKey].alerts.unshift({t:results.risk==='CRITICAL'?'crit':results.risk==='MODERATE'?'warn':'ok',ico:results.risk==='CRITICAL'?'🔴':results.risk==='MODERATE'?'⚠️':'✅',txt:`New scan — NDVI ${results.ndvi.toFixed(2)} · ${results.area} km² scanned`,time:'Just now'});
+if(CROP_PANEL[forestKey].alerts.length>4)CROP_PANEL[forestKey].alerts.length=4;
+}
+addLogRow(scan);
+const st=document.getElementById('stat_'+entryId);
+if(st){st.textContent='✓ Saved to '+(CROP_NAMES[forestKey]||forestKey);st.style.color='var(--gold2)';}
+const ab=document.getElementById('analyse_'+entryId);
+if(ab){ab.textContent='✓ Saved';ab.disabled=true;ab.style.opacity='.5';}
+showSaveToast(CROP_NAMES[forestKey]||forestKey,results.risk);
+closeAnalysis();
+}
+function addLogRow(scan){
+const tbody=document.getElementById('logBody');
+if(!tbody)return;
+const now=new Date(),dateStr=now.toISOString().split('T')[0];
+const ndviCls=scan.ndvi>=.6?'ndvi-hi':scan.ndvi>=.4?'ndvi-mid':'ndvi-lo';
+const fname=CROP_NAMES[scan.forestKey]||scan.forestKey;
+const fo=cropZones.find(f=>f.key===scan.forestKey)||{};
+const tr=document.createElement('tr');
+tr.innerHTML=`<td class="td-id">${scan.id}</td><td class="td-drone">${scan.droneId}</td><td class="td-crop">${fname}</td><td>${fo.state||'---'}</td><td>${dateStr}</td><td>${scan.area} km²</td><td>${scan.area} km²</td><td><span class="ndvi-val ${ndviCls}">${scan.ndvi.toFixed(2)}</span></td><td><span class="st-pill st-done">Uploaded</span></td>`;
+tbody.insertBefore(tr,tbody.firstChild);
+}
+function showSaveToast(cropName,risk){
+const rc=risk==='HEALTHY'?'#22c55e':risk==='MODERATE'?'#f5a623':'#ef4444';
+const t=document.createElement('div');
+t.className='upload-success-flash';
+t.style.borderColor=rc+'66';
+t.innerHTML=`<span style="font-size:20px">🌾</span><div><div style="font-weight:600;color:var(--text)">Saved to ${cropName}</div><div style="font-family:var(--font-mono);font-size:10px;color:${rc}">${risk} · Data stored & scan log updated</div></div>`;
+document.body.appendChild(t);
+setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},4000);
+}
+
+// ─────────────────────────── INLINE MAP PANEL ───────────────────────────
+let _mapPanelOpen=false;
+function openMapInfoPanel(key){
+const d=CROP_PANEL[key];
+if(!d)return;
+const fo=cropZones.find(f=>f.key===key)||{};
+const rk=d.risk.toLowerCase();
+const rc=rk==='healthy'?'#22c55e':rk==='moderate'?'#f5a623':'#ef4444';
+const pct=Math.round(d.ndvi*100);
+document.querySelectorAll('#forestList .f-item').forEach((el,i)=>{
+el.style.background='';el.style.borderColor='';
+if(cropZones[i]&&cropZones[i].key===key){el.style.background='rgba(245,166,35,.07)';el.style.borderColor='rgba(245,166,35,.35)';}
+});
+const chip=document.getElementById('mapSelectedChip');
+if(chip){chip.style.display='flex';document.getElementById('mapChipName').textContent=fo.name||key;document.getElementById('mapChipNdvi').textContent='NDVI '+d.ndvi.toFixed(2);document.getElementById('mapChipDot').style.background=rc;}
+const userScans=(forestScansDB&&forestScansDB[key])||[];
+const content=document.getElementById('mapInfoContent');
+if(!content)return;
+content.innerHTML='';
+const hero=document.createElement('div');
+hero.style.cssText='position:relative;flex-shrink:0;';
+hero.innerHTML=`
+<div style="width:100%;height:190px;background:linear-gradient(135deg,${rc}22,${rc}44);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;" onclick="openForestPanel('${key}')">
+<div style="text-align:center;">
+<div style="font-size:48px;margin-bottom:8px;">${fo.crop==='Wheat'?'🌾':fo.crop==='Rice'||fo.crop==='Paddy'?'🍚':fo.crop==='Cotton'?'🌿':fo.crop==='Sugarcane'?'🍬':fo.crop==='Banana'?'🍌':fo.crop==='Tea'?'🍵':fo.crop==='Coffee'?'☕':fo.crop==='Apple'?'🍎':fo.crop==='Grapes'?'🍇':'🌱'}</div>
+<div style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.6);">NDVI · ${d.ndvi.toFixed(2)} · ${d.risk}</div>
+</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent);display:flex;align-items:flex-end;justify-content:space-between;">
+<div><div style="font-family:var(--font-display);font-size:16px;font-weight:800;color:#fff;">${fo.name||key}</div><div style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;">${fo.state||''} · ${fo.crop||''}</div></div>
+<div style="background:${rc}22;border:1px solid ${rc}55;border-radius:7px;padding:4px 10px;font-family:var(--font-display);font-size:10px;font-weight:800;color:${rc};">${d.risk}</div>
+</div>
+</div>`;
+content.appendChild(hero);
+const stats=document.createElement('div');
+stats.className='map-info-section';
+stats.innerHTML=`<div class="map-info-title">📊 NDVI Analysis</div>
+<div style="margin-bottom:4px;"><div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;"><span>Vegetation Index</span><span style="color:${rc};font-weight:700;">${d.ndvi.toFixed(2)}</span></div>
+<div class="map-ndvi-mini"><div class="map-ndvi-mini-pin" style="left:${pct}%"></div></div>
+<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px;"><span>0.0</span><span>0.5</span><span>1.0</span></div></div>
+<div class="map-stat-row"><span class="map-stat-lbl">Risk</span><span class="map-stat-val" style="color:${rc}">${d.risk}</span></div>
+<div class="map-stat-row"><span class="map-stat-lbl">Area</span><span class="map-stat-val">${d.area}</span></div>
+<div class="map-stat-row"><span class="map-stat-lbl">Drone</span><span class="map-stat-val" style="color:var(--gold2)">${d.drone}</span></div>
+<div class="map-stat-row"><span class="map-stat-lbl">Duration</span><span class="map-stat-val">${d.dur}</span></div>`;
+content.appendChild(stats);
+const alerts=document.createElement('div');
+alerts.className='map-info-section';
+alerts.innerHTML=`<div class="map-info-title">📡 Recent Alerts</div>${d.alerts.map(a=>`<div class="map-alert-row ${a.t}"><span class="map-alert-ico">${a.ico}</span><span class="map-alert-txt">${a.txt}</span><span class="map-alert-time">${a.time}</span></div>`).join('')}`;
+content.appendChild(alerts);
+const btn=document.createElement('button');
+btn.className='map-view-full-btn';
+btn.textContent='VIEW FULL SCAN DETAILS →';
+btn.onclick=()=>openForestPanel(key);
+content.appendChild(btn);
+const grid=document.getElementById('mapBodyGrid');
+if(grid)grid.style.gridTemplateColumns='230px 1fr 380px';
+_mapPanelOpen=true;
+setTimeout(()=>{if(window._map)window._map.invalidateSize();},380);
+}
+function closeInlinePanel(){
+const grid=document.getElementById('mapBodyGrid');
+if(grid)grid.style.gridTemplateColumns='230px 1fr 0px';
+_mapPanelOpen=false;
+const chip=document.getElementById('mapSelectedChip');
+if(chip)chip.style.display='none';
+document.querySelectorAll('#forestList .f-item').forEach(el=>{el.style.background='';el.style.borderColor='';});
+setTimeout(()=>{if(window._map)window._map.invalidateSize();},380);
+}
+
+// ─────────────────────────── FOREST PANEL ───────────────────────────
+function openForestPanel(key){
+const d=CROP_PANEL[key];
+if(!d)return;
+const fo=cropZones.find(f=>f.key===key)||{};
+const rk=d.risk.toLowerCase();
+const rc=rk==='healthy'?'#22c55e':rk==='moderate'?'#f5a623':'#ef4444';
+const cropEmoji=fo.crop==='Wheat'?'🌾':fo.crop==='Rice'||fo.crop==='Paddy'?'🍚':fo.crop==='Cotton'?'🌿':fo.crop==='Sugarcane'?'🍬':fo.crop==='Banana'?'🍌':fo.crop==='Tea'?'🍵':fo.crop==='Coffee'?'☕':fo.crop==='Apple'?'🍎':fo.crop==='Grapes'?'🍇':'🌱';
+// Build gradient hero image
+const canvas=document.createElement('canvas');
+canvas.width=900;canvas.height=400;
+const ctx=canvas.getContext('2d');
+const grad=ctx.createLinearGradient(0,0,900,400);
+grad.addColorStop(0,rc+'33');
+grad.addColorStop(0.5,rc+'66');
+grad.addColorStop(1,rc+'22');
+ctx.fillStyle=grad;
+ctx.fillRect(0,0,900,400);
+// Draw NDVI heatmap-like cells
+for(let x=0;x<900;x+=30){for(let y=0;y<400;y+=30){
+const v=Math.random();
+const ndviVal=d.ndvi*(0.7+v*0.6);
+const alpha=0.15+v*0.2;
+if(ndviVal>0.6){ctx.fillStyle=`rgba(34,197,94,${alpha})`;}
+else if(ndviVal>0.4){ctx.fillStyle=`rgba(245,166,35,${alpha})`;}
+else{ctx.fillStyle=`rgba(239,68,68,${alpha})`;}
+ctx.fillRect(x,y,28,28);
+}}
+ctx.fillStyle='rgba(0,0,0,0.3)';
+ctx.fillRect(0,300,900,100);
+ctx.font='bold 80px Arial';ctx.fillStyle='rgba(255,255,255,0.08)';
+ctx.fillText(cropEmoji,380,220);
+document.getElementById('fpImg').src=canvas.toDataURL('image/jpeg',0.8);
+document.getElementById('fpName').textContent=fo.name||key;
+document.getElementById('fpState').textContent=(fo.state||'')+' · '+(fo.crop||'');
+const badge=document.getElementById('fpBadge');
+badge.textContent=d.risk;
+badge.className='fp-badge fpb-'+rk;
+document.getElementById('fpStats').innerHTML=`
+<div class="fp-stat"><div class="fp-stat-lbl">NDVI Score</div><div class="fp-stat-val" style="color:${rc}">${d.ndvi.toFixed(2)}</div><div class="fp-stat-sub">Crop health index</div></div>
+<div class="fp-stat"><div class="fp-stat-lbl">Area Scanned</div><div class="fp-stat-val">${d.area}</div><div class="fp-stat-sub">Today's mission</div></div>
+<div class="fp-stat"><div class="fp-stat-lbl">Active Drone</div><div class="fp-stat-val" style="color:var(--gold2)">${d.drone}</div><div class="fp-stat-sub">Assigned unit</div></div>
+<div class="fp-stat"><div class="fp-stat-lbl">Total Missions</div><div class="fp-stat-val">${d.missions}</div><div class="fp-stat-sub">Lifetime flights</div></div>`;
+document.getElementById('fpNdviScore').textContent=d.ndvi.toFixed(2);
+document.getElementById('fpNdviScore').style.color=rc;
+document.getElementById('fpNdviPin').style.setProperty('--pin-col',rc);
+setTimeout(()=>{document.getElementById('fpNdviPin').style.left=(d.ndvi*100)+'%';},80);
+document.getElementById('fpAlerts').innerHTML=d.alerts.map(a=>`
+<div class="fp-alert ${a.t}">
+<span class="fp-alert-ico">${a.ico}</span>
+<span class="fp-alert-txt">${a.txt}</span>
+<span class="fp-alert-time">${a.time}</span>
+</div>`).join('');
+const pct=Math.round(d.ndvi*100);
+const circ=176;
+document.getElementById('fpRingCircle').style.strokeDashoffset=circ-(circ*pct/100);
+document.getElementById('fpRingCircle').style.stroke=rc;
+document.getElementById('fpRingVal').textContent=pct+'%';
+document.getElementById('fpRingDesc').textContent=
+rk==='healthy'?'Crop is in excellent health.':
+rk==='moderate'?'Moderate crop stress detected.':
+'⚠ Critical crop stress risk.';
+document.getElementById('fpMission').innerHTML=[
+['Flight Duration',d.dur],
+['Altitude',d.alt],
+['State',fo.state||'---'],
+['Crop Type',fo.crop||'---'],
+['Timestamp','2025-03-10 · 11:42 IST'],
+].map(([l,v])=>`
+<div class="fp-mrow">
+<span class="fp-mrow-lbl">${l}</span>
+<span class="fp-mrow-val">${v}</span>
+</div>`).join('');
+const ov=document.getElementById('fpOverlay');
+if(ov){ov.classList.remove('fp-hidden');document.body.style.overflow='hidden';}
+}
+function closeForestPanel(){
+document.getElementById('fpOverlay').classList.add('fp-hidden');
+document.body.style.overflow='';
+}
+document.addEventListener('DOMContentLoaded',function(){
+const fpClose=document.getElementById('fpClose');
+const fpOverlay=document.getElementById('fpOverlay');
+if(fpClose)fpClose.addEventListener('click',closeForestPanel);
+if(fpOverlay)fpOverlay.addEventListener('click',function(e){if(e.target===fpOverlay)closeForestPanel();});
+});
+</script>
+</body>
+</html>
